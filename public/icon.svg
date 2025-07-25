@@ -1,0 +1,27 @@
+
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="236" fill="#2563eb" stroke="#1e40af" stroke-width="8"/>
+  
+  <!-- Badge/Shield shape -->
+  <path d="M256 80 L380 140 L380 320 L256 432 L132 320 L132 140 Z" 
+        fill="#ffffff" stroke="#1e40af" stroke-width="6"/>
+  
+  <!-- NFC waves -->
+  <g stroke="#2563eb" stroke-width="8" fill="none" stroke-linecap="round">
+    <path d="M226 226 Q226 206 246 206 Q266 206 266 226"/>
+    <path d="M216 236 Q216 196 256 196 Q296 196 296 236"/>
+    <path d="M206 246 Q206 186 256 186 Q306 186 306 246"/>
+    
+    <path d="M286 286 Q286 306 266 306 Q246 306 246 286"/>
+    <path d="M296 276 Q296 316 256 316 Q216 316 216 276"/>
+    <path d="M306 266 Q306 326 256 326 Q206 326 206 266"/>
+  </g>
+  
+  <!-- Center dot -->
+  <circle cx="256" cy="256" r="8" fill="#2563eb"/>
+  
+  <!-- "DT" text -->
+  <text x="256" y="380" font-family="Arial, sans-serif" font-size="48" font-weight="bold" 
+        text-anchor="middle" fill="#1e40af">DT</text>
+</svg>

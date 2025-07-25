@@ -1,0 +1,7 @@
+{
+  "name": "nfc-reader-app",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
