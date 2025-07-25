@@ -21,7 +21,7 @@ echo "Sincronizzazione con Capacitor..."
 npx cap sync
 if [ $? -ne 0 ]; then
     echo "Errore durante cap sync"
-    exit 1\
+    exit 1
 fi
 
 # 3. Build APK con Java 17
