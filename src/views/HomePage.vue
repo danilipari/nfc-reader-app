@@ -309,7 +309,7 @@ interface NFCTag {
 }
 
 const API_URL = import.meta.env.VITE_API_URL;
-const API_AUTH = import.meta.env.VITE_API_AUTH;
+// const API_AUTH = import.meta.env.VITE_API_AUTH;
 const STORAGE_KEY = 'nfc_tags_history';
 
 const isReading = ref(false);
@@ -613,23 +613,25 @@ const callAPI = async () => {
     isCallingAPI.value = true;
     apiResponse.value = '';
     
-    const requestBody = {
-      "jsonrpc": "2.0",
-      "id": parseInt(currentTag.value.employeeId || '1'),
-      "method": "eAccess.createRfidMedium",
-      "params": [{ "uid": currentTag.value.serial }]
-    };
+    // const requestBody = {
+    //   "jsonrpc": "2.0",
+    //   "id": parseInt(currentTag.value.employeeId || '1'),
+    //   "method": "eAccess.createRfidMedium",
+    //   "params": [{ "uid": currentTag.value.serial }]
+    // };
+
+    const requestPorzioBody = { serial: `${currentTag.value.serial}` };
     
-    console.log('API Request:', JSON.stringify(requestBody, null, 2));
+    console.log('API Request:', JSON.stringify(requestPorzioBody, null, 2));
     
     const response = await CapacitorHttp.request({
       url: API_URL,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': API_AUTH
+        // 'Authorization': API_AUTH
       },
-      data: requestBody
+      data: requestPorzioBody
     });
     
     console.log('API Response Status:', response.status);

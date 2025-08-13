@@ -7,7 +7,8 @@ const config: CapacitorConfig = {
   server: {
     allowNavigation: [
       'https://*.eaccess.glutz.com',
-      'https://eaccess.glutz.com'
+      'https://eaccess.glutz.com',
+      'http://10.0.7.16:8080'
     ]
   },
   plugins: {
