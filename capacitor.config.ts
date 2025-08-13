@@ -6,9 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     allowNavigation: [
-      'https://*.eaccess.glutz.com',
-      'https://eaccess.glutz.com',
-      'http://10.0.7.16:8080'
+      'http://st-guess-who.test.k8s.dontouch.group'
     ]
   },
   plugins: {
