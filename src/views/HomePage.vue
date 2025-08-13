@@ -102,8 +102,8 @@
               </ion-item>
               
               <ion-item>
-                <ion-label position="stacked">ID Employee *</ion-label>
-                <ion-input v-model="tagForm.employeeId" placeholder="Inserisci ID Employee" required></ion-input>
+                <ion-label position="stacked">ID Employee</ion-label>
+                <ion-input v-model="tagForm.employeeId" placeholder="Inserisci ID Employee"></ion-input>
               </ion-item>
               
               <ion-button @click="confirmTag" expand="block" color="success" style="margin-top: 20px;">
@@ -566,25 +566,23 @@ const startNFCReading = async () => {
 };
 
 const confirmTag = () => {
-  if (!tagForm.value.employeeId.trim()) {
-    showToast('ID Employee è obbligatorio', 'warning');
-    return;
-  }
-  
   if (!currentTag.value) return;
   
   const newEmployeeId = tagForm.value.employeeId.trim();
-  const duplicateTag = tagsHistory.value.find(tag => 
-    tag.employeeId === newEmployeeId && tag.serial !== currentTag.value!.serial
-  );
   
-  if (duplicateTag) {
-    showToast(`Employee ID ${newEmployeeId} già utilizzato per il tag ${duplicateTag.serial}`, 'danger');
-    return;
+  if (newEmployeeId) {
+    const duplicateTag = tagsHistory.value.find(tag => 
+      tag.employeeId === newEmployeeId && tag.serial !== currentTag.value!.serial
+    );
+    
+    if (duplicateTag) {
+      showToast(`Employee ID ${newEmployeeId} già utilizzato per il tag ${duplicateTag.serial}`, 'danger');
+      return;
+    }
   }
   
   currentTag.value.name = tagForm.value.name.trim() || undefined;
-  currentTag.value.employeeId = newEmployeeId;
+  currentTag.value.employeeId = newEmployeeId || undefined;
   
   const existingIndex = tagsHistory.value.findIndex(tag => tag.serial === currentTag.value!.serial);
   if (existingIndex >= 0) {
