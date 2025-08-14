@@ -123,29 +123,95 @@
             </ion-toolbar>
           </ion-header>
           <ion-content>
-            <div style="padding: 10px; display: flex; gap: 10px; background: var(--ion-color-light);">
+            <div style="padding: 10px; display: flex; gap: 10px; background: var(--ion-color-light); flex-wrap: wrap;">
               <ion-button 
+                v-if="!isSelectionMode"
                 @click="exportHistory" 
                 expand="block" 
                 fill="solid" 
                 color="secondary" 
-                style="flex: 1;"
+                style="flex: 1; min-width: 120px;"
                 size="small"
               >
                 <ion-icon :icon="downloadOutline" slot="start"></ion-icon>
-                Esporta Backup
+                Esporta
               </ion-button>
               
               <ion-button 
+                v-if="!isSelectionMode"
                 @click="triggerImportFile" 
                 expand="block" 
                 fill="solid" 
                 color="tertiary" 
-                style="flex: 1;"
+                style="flex: 1; min-width: 120px;"
                 size="small"
               >
                 <ion-icon :icon="cloudUploadOutline" slot="start"></ion-icon>
-                Importa Backup
+                Importa
+              </ion-button>
+              
+              <ion-button 
+                v-if="!isSelectionMode && tagsHistory.length > 0"
+                @click="startSelectionMode" 
+                expand="block" 
+                fill="outline" 
+                color="primary" 
+                style="flex: 1; min-width: 120px;"
+                size="small"
+              >
+                <ion-icon :icon="checkmark" slot="start"></ion-icon>
+                Seleziona
+              </ion-button>
+              
+              <!-- Modalità selezione -->
+              <ion-button 
+                v-if="isSelectionMode"
+                @click="selectAllTags" 
+                expand="block" 
+                fill="solid" 
+                color="primary" 
+                style="flex: 1; min-width: 100px;"
+                size="small"
+              >
+                Tutti
+              </ion-button>
+              
+              <ion-button 
+                v-if="isSelectionMode"
+                @click="deselectAllTags" 
+                expand="block" 
+                fill="outline" 
+                color="medium" 
+                style="flex: 1; min-width: 100px;"
+                size="small"
+              >
+                Nessuno
+              </ion-button>
+              
+              <ion-button 
+                v-if="isSelectionMode && selectedTagIds.size > 0"
+                @click="deleteSelectedTags" 
+                expand="block" 
+                fill="solid" 
+                color="danger" 
+                style="flex: 1; min-width: 100px;"
+                size="small"
+              >
+                <ion-icon :icon="trashOutline" slot="start"></ion-icon>
+                Elimina ({{ selectedTagIds.size }})
+              </ion-button>
+              
+              <ion-button 
+                v-if="isSelectionMode"
+                @click="exitSelectionMode" 
+                expand="block" 
+                fill="clear" 
+                color="medium" 
+                style="flex: 1; min-width: 100px;"
+                size="small"
+              >
+                <ion-icon :icon="close" slot="start"></ion-icon>
+                Annulla
               </ion-button>
             </div>
             
@@ -158,7 +224,14 @@
             />
             <ion-list v-if="tagsHistory.length > 0">
               <ion-item-sliding v-for="tag in tagsHistory" :key="tag.id">
-                <ion-item @click="openTagDetailModal(tag)">
+                <ion-item @click="isSelectionMode ? toggleTagSelection(tag.id) : openTagDetailModal(tag)">
+                  <ion-checkbox 
+                    v-if="isSelectionMode"
+                    :checked="selectedTagIds.has(tag.id)"
+                    @ionChange="toggleTagSelection(tag.id)"
+                    slot="start"
+                    style="margin-right: 16px;"
+                  ></ion-checkbox>
                   <ion-label>
                     <h3>{{ tag.name || 'Senza nome' }}</h3>
                     <p>{{ tag.serial }}</p>
@@ -169,6 +242,7 @@
                     <pre v-if="showDebugMode && tag.apiResponse" style="font-size: 0.7em; background: #f5f5f5; padding: 5px; margin-top: 5px; border-radius: 3px;">{{ JSON.stringify(tag.apiResponse, null, 2) }}</pre>
                   </ion-label>
                   <ion-badge 
+                    v-if="!isSelectionMode"
                     :color="(tag.sendStatus === 'sent' || tag.sendStatus === 'completed') ? 'success' : tag.sendStatus === 'error' ? 'danger' : 'warning'"
                     slot="end"
                   >
@@ -176,7 +250,7 @@
                   </ion-badge>
                 </ion-item>
                 
-                <ion-item-options side="end">
+                <ion-item-options v-if="!isSelectionMode" side="end">
                   <ion-item-option 
                     v-if="tag.sendStatus === 'pending' || tag.sendStatus === 'error'"
                     @click="sendTagAPI(tag)" 
@@ -193,7 +267,7 @@
                     <ion-icon :icon="send"></ion-icon>
                     Aggiorna
                   </ion-item-option>
-                  <ion-item-option @click="deleteHistoryTag(tag.id)" color="danger">
+                  <ion-item-option @click="confirmDeleteSingleTag(tag.id)" color="danger">
                     <ion-icon :icon="trash"></ion-icon>
                     Elimina
                   </ion-item-option>
@@ -292,7 +366,7 @@
                     Aggiorna API
                   </ion-button>
                   
-                  <ion-button @click="deleteCurrentTag" expand="block" color="danger">
+                  <ion-button @click="confirmDeleteCurrentTag" expand="block" color="danger">
                     <ion-icon :icon="trash" slot="start"></ion-icon>
                     Elimina Tag
                   </ion-button>
@@ -330,9 +404,11 @@ import {
   IonItemOptions,
   IonItemOption,
   IonBadge,
-  toastController
+  IonCheckbox,
+  toastController,
+  alertController
 } from '@ionic/vue';
-import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline } from 'ionicons/icons';
+import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { NFC } from '@exxili/capacitor-nfc';
@@ -374,6 +450,8 @@ const tagForm = ref({
   employeeId: ''
 });
 const selectedHistoryTag = ref<NFCTag | null>(null);
+const selectedTagIds = ref<Set<string>>(new Set());
+const isSelectionMode = ref(false);
 
 const loadTagsHistory = () => {
   try {
@@ -822,6 +900,110 @@ const deleteCurrentTag = () => {
     deleteHistoryTag(selectedHistoryTag.value.id);
     closeTagDetailModal();
   }
+};
+
+// Funzioni per la selezione multipla
+const startSelectionMode = () => {
+  isSelectionMode.value = true;
+  selectedTagIds.value.clear();
+};
+
+const exitSelectionMode = () => {
+  isSelectionMode.value = false;
+  selectedTagIds.value.clear();
+};
+
+const toggleTagSelection = (tagId: string) => {
+  if (selectedTagIds.value.has(tagId)) {
+    selectedTagIds.value.delete(tagId);
+  } else {
+    selectedTagIds.value.add(tagId);
+  }
+};
+
+const selectAllTags = () => {
+  selectedTagIds.value.clear();
+  tagsHistory.value.forEach(tag => selectedTagIds.value.add(tag.id));
+};
+
+const deselectAllTags = () => {
+  selectedTagIds.value.clear();
+};
+
+// Funzioni di conferma per eliminazione
+const confirmDeleteSingleTag = async (tagId: string) => {
+  const alert = await alertController.create({
+    header: 'Conferma Eliminazione',
+    message: 'Sei sicuro di voler eliminare questo tag?',
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel'
+      },
+      {
+        text: 'Elimina',
+        role: 'destructive',
+        handler: () => {
+          deleteHistoryTag(tagId);
+        }
+      }
+    ]
+  });
+  
+  await alert.present();
+};
+
+const confirmDeleteCurrentTag = async () => {
+  if (!selectedHistoryTag.value) return;
+  
+  const alert = await alertController.create({
+    header: 'Conferma Eliminazione',
+    message: `Sei sicuro di voler eliminare il tag "${selectedHistoryTag.value.name || selectedHistoryTag.value.serial}"?`,
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel'
+      },
+      {
+        text: 'Elimina',
+        role: 'destructive',
+        handler: () => {
+          deleteCurrentTag();
+        }
+      }
+    ]
+  });
+  
+  await alert.present();
+};
+
+const deleteSelectedTags = async () => {
+  if (selectedTagIds.value.size === 0) return;
+  
+  const alert = await alertController.create({
+    header: 'Conferma Eliminazione Multipla',
+    message: `Sei sicuro di voler eliminare ${selectedTagIds.value.size} tag selezionati? Questa azione non può essere annullata.`,
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel'
+      },
+      {
+        text: 'Elimina Tutti',
+        role: 'destructive',
+        handler: () => {
+          // Elimina tutti i tag selezionati
+          const idsToDelete = Array.from(selectedTagIds.value);
+          idsToDelete.forEach(id => deleteHistoryTag(id));
+          
+          showToast(`Eliminati ${idsToDelete.length} tag`, 'success');
+          exitSelectionMode();
+        }
+      }
+    ]
+  });
+  
+  await alert.present();
 };
 
 const exportHistory = async () => {
