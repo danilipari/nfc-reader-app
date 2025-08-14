@@ -838,11 +838,12 @@ const exportHistory = async () => {
     if (isPlatform('capacitor')) {
       // Su mobile: salva il file e condividilo
       try {
-        // Salva il file nella directory Documents
+        // Salva il file nella directory Documents come testo UTF-8
         const result = await Filesystem.writeFile({
           path: fileName,
           data: jsonString,
           directory: Directory.Documents,
+          encoding: 'utf8' as any,
           recursive: true
         });
         
@@ -858,6 +859,7 @@ const exportHistory = async () => {
           showToast(`Esportati ${tagsHistory.value.length} tag`, 'success');
         }
       } catch (shareError) {
+        console.error('Share error:', shareError);
         // Se la condivisione fallisce, almeno il file è salvato
         showToast(`File salvato in Documents: ${fileName}`, 'success');
       }
@@ -895,7 +897,32 @@ const handleFileImport = async (event: Event) => {
   if (!file) return;
   
   try {
-    const text = await file.text();
+    let text = await file.text();
+    
+    // Pulisci il testo da eventuali caratteri invisibili all'inizio
+    // Rimuovi BOM e altri caratteri di controllo
+    text = text.trim();
+    if (text.charCodeAt(0) === 0xFEFF) {
+      text = text.slice(1);
+    }
+    // Rimuovi eventuali caratteri invisibili all'inizio
+    text = text.replace(/^[\x00-\x1F\x7F-\x9F]+/, '');
+    
+    // Controlla se il file è in base64 (inizia con caratteri base64 validi ma non è JSON)
+    if (!text.startsWith('{') && !text.startsWith('[')) {
+      // Prova a decodificare da base64
+      try {
+        const decoded = atob(text);
+        // Decodifica da UTF-8
+        text = decodeURIComponent(escape(decoded));
+        console.log('Decoded from base64');
+      } catch (e) {
+        console.log('Not base64 encoded, using original text');
+      }
+    }
+    
+    console.log('Importing JSON:', text.substring(0, 100)); // Debug: mostra i primi 100 caratteri
+    
     const importedData = JSON.parse(text);
     
     // Validazione struttura base
