@@ -23,13 +23,22 @@ allprojects {
         mavenCentral()
     }
     
-    // Force Java 17 for all modules
+    // Force Java 17 for all modules including Capacitor plugins
     afterEvaluate { project ->
         if (project.hasProperty("android")) {
             android {
                 compileOptions {
                     sourceCompatibility JavaVersion.VERSION_17
                     targetCompatibility JavaVersion.VERSION_17
+                }
+                
+                // Force Java 17 toolchain for library modules
+                if (project.plugins.hasPlugin('com.android.library')) {
+                    java {
+                        toolchain {
+                            languageVersion = JavaLanguageVersion.of(17)
+                        }
+                    }
                 }
             }
         }

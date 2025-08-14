@@ -123,6 +123,39 @@
             </ion-toolbar>
           </ion-header>
           <ion-content>
+            <div style="padding: 10px; display: flex; gap: 10px; background: var(--ion-color-light);">
+              <ion-button 
+                @click="exportHistory" 
+                expand="block" 
+                fill="solid" 
+                color="secondary" 
+                style="flex: 1;"
+                size="small"
+              >
+                <ion-icon :icon="downloadOutline" slot="start"></ion-icon>
+                Esporta Backup
+              </ion-button>
+              
+              <ion-button 
+                @click="triggerImportFile" 
+                expand="block" 
+                fill="solid" 
+                color="tertiary" 
+                style="flex: 1;"
+                size="small"
+              >
+                <ion-icon :icon="cloudUploadOutline" slot="start"></ion-icon>
+                Importa Backup
+              </ion-button>
+            </div>
+            
+            <input 
+              ref="fileInput" 
+              type="file" 
+              accept=".json,.txt" 
+              @change="handleFileImport" 
+              style="display: none;"
+            />
             <ion-list v-if="tagsHistory.length > 0">
               <ion-item-sliding v-for="tag in tagsHistory" :key="tag.id">
                 <ion-item @click="openTagDetailModal(tag)">
@@ -171,6 +204,16 @@
             <div v-else style="padding: 20px; text-align: center;">
               <ion-text color="medium">
                 <p>Nessun tag nella cronologia</p>
+                <ion-button 
+                  @click="triggerImportFile" 
+                  expand="block" 
+                  fill="outline" 
+                  color="primary" 
+                  style="margin-top: 20px;"
+                >
+                  <ion-icon :icon="cloudUploadOutline" slot="start"></ion-icon>
+                  Importa Backup
+                </ion-button>
               </ion-text>
             </div>
             <div v-if="selectedHistoryTag" style="padding: 20px; border-top: 1px solid var(--ion-color-light);">
@@ -289,12 +332,14 @@ import {
   IonBadge,
   toastController
 } from '@ionic/vue';
-import { scan, send, time, trash, checkmark, close } from 'ionicons/icons';
+import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { NFC } from '@exxili/capacitor-nfc';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { CapacitorHttp } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface NFCTag {
   id: string;
@@ -776,6 +821,144 @@ const deleteCurrentTag = () => {
   if (selectedHistoryTag.value) {
     deleteHistoryTag(selectedHistoryTag.value.id);
     closeTagDetailModal();
+  }
+};
+
+const exportHistory = async () => {
+  try {
+    const dataToExport = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      tags: tagsHistory.value
+    };
+    
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const fileName = `nfc-tags-backup-${new Date().toISOString().split('T')[0]}.json`;
+    
+    if (isPlatform('capacitor')) {
+      // Su mobile: salva il file e condividilo
+      try {
+        // Salva il file nella directory Documents
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: jsonString,
+          directory: Directory.Documents,
+          recursive: true
+        });
+        
+        // Condividi il file usando il sistema di condivisione nativo
+        const shareResult = await Share.share({
+          title: 'Backup Tag NFC',
+          text: `Backup di ${tagsHistory.value.length} tag NFC`,
+          url: result.uri,
+          dialogTitle: 'Salva o condividi il backup'
+        });
+        
+        if (shareResult.activityType) {
+          showToast(`Esportati ${tagsHistory.value.length} tag`, 'success');
+        }
+      } catch (shareError) {
+        // Se la condivisione fallisce, almeno il file è salvato
+        showToast(`File salvato in Documents: ${fileName}`, 'success');
+      }
+    } else {
+      // Su web: usa il metodo download standard
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast(`Esportati ${tagsHistory.value.length} tag`, 'success');
+    }
+  } catch (error) {
+    showToast('Errore durante l\'esportazione', 'danger');
+    console.error('Export error:', error);
+  }
+};
+
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerImportFile = () => {
+  fileInput.value?.click();
+};
+
+const handleFileImport = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const importedData = JSON.parse(text);
+    
+    // Validazione struttura base
+    if (!importedData.tags || !Array.isArray(importedData.tags)) {
+      throw new Error('Formato file non valido');
+    }
+    
+    // Validazione e pulizia dei tag
+    const validTags: NFCTag[] = [];
+    const existingSerials = new Set(tagsHistory.value.map(t => t.serial));
+    let skippedCount = 0;
+    
+    for (const tag of importedData.tags) {
+      // Validazione campi obbligatori
+      if (!tag.serial || !tag.id) {
+        continue;
+      }
+      
+      // Skip tag già esistenti
+      if (existingSerials.has(tag.serial)) {
+        skippedCount++;
+        continue;
+      }
+      
+      // Costruisci tag valido
+      const validTag: NFCTag = {
+        id: tag.id,
+        serial: tag.serial,
+        name: tag.name || undefined,
+        employeeId: tag.employeeId || undefined,
+        timestamp: tag.timestamp || Date.now(),
+        lastSent: tag.lastSent || undefined,
+        lastUpdate: tag.lastUpdate || undefined,
+        sendStatus: tag.sendStatus || 'pending',
+        apiResponse: tag.apiResponse || undefined
+      };
+      
+      validTags.push(validTag);
+    }
+    
+    if (validTags.length === 0) {
+      showToast('Nessun nuovo tag da importare', 'warning');
+      return;
+    }
+    
+    // Aggiungi i nuovi tag
+    tagsHistory.value = [...tagsHistory.value, ...validTags];
+    saveTagsHistory();
+    
+    let message = `Importati ${validTags.length} nuovi tag`;
+    if (skippedCount > 0) {
+      message += ` (${skippedCount} già esistenti)`;
+    }
+    showToast(message, 'success');
+    
+  } catch (error) {
+    showToast('Errore durante l\'importazione: ' + (error instanceof Error ? error.message : 'Formato non valido'), 'danger');
+    console.error('Import error:', error);
+  } finally {
+    // Reset input
+    if (target) {
+      target.value = '';
+    }
   }
 };
 
