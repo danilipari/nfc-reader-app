@@ -32,7 +32,7 @@
               style="margin-top: 10px;"
             >
               <ion-icon :icon="flash" slot="start"></ion-icon>
-              Modalità Lettura Costante
+              Modalità Monitor
             </ion-button>
             
             <div v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')" class="nfc-result">
@@ -52,7 +52,7 @@
                 <p>{{ currentTag.serial }}</p>
                 <p><strong>{{ currentTag.name || 'Senza nome' }}</strong> - ID: {{ currentTag.employeeId }}</p>
                 <p style="font-size: 0.9em; color: var(--ion-color-medium); margin-top: 10px;">
-                  Usa la cronologia per inviare il tag all'API
+                  Usa la cronologia per inviare il tag al sistema
                 </p>
               </ion-text>
             </div>
@@ -363,7 +363,7 @@
                     style="margin-bottom: 10px;"
                   >
                     <ion-icon :icon="send" slot="start"></ion-icon>
-                    Invia API
+                    Invia al sistema
                   </ion-button>
                   
                   <ion-button 
@@ -374,7 +374,7 @@
                     style="margin-bottom: 10px;"
                   >
                     <ion-icon :icon="send" slot="start"></ion-icon>
-                    Aggiorna API
+                    Aggiorna il sistema
                   </ion-button>
                   
                   <ion-button @click="confirmDeleteCurrentTag" expand="block" color="danger">
@@ -756,8 +756,8 @@ const callAPI = async () => {
       currentTag.value.lastSent = Date.now();
       currentTag.value.lastUpdate = Date.now();
       currentTag.value.apiResponse = response.data;
-      apiResponse.value = `Tag NFC registrato con successo! (${response.status})`;
-      showToast(`Tag NFC registrato con successo! Status: ${response.status}`, 'success');
+      apiResponse.value = 'Tag registrato con successo nel sistema';
+      showToast('Tag registrato con successo', 'success');
       
       const tagIndex = tagsHistory.value.findIndex(tag => tag.id === currentTag.value!.id);
       if (tagIndex >= 0) {
@@ -767,14 +767,14 @@ const callAPI = async () => {
     } else {
       currentTag.value.sendStatus = 'error';
       apiResponse.value = `Errore: ${response.error}`;
-      showToast(`Errore API: ${response.error}`, 'danger');
+      showToast(`Errore: ${response.error}`, 'danger');
     }
     
   } catch (error) {
     console.error('API Call Error:', error);
     currentTag.value.sendStatus = 'error';
     apiResponse.value = `Errore: ${error instanceof Error ? error.message : 'Errore durante l\'invio dei dati'}`;
-    showToast(`Errore API: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`, 'danger');
+    showToast(`Errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`, 'danger');
   } finally {
     isCallingAPI.value = false;
   }

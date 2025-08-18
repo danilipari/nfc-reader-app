@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Lettura Costante NFC</ion-title>
+        <ion-title>Modalità Monitor</ion-title>
         <ion-button slot="start" fill="clear" @click="goBack">
           <ion-icon :icon="arrowBack"></ion-icon>
         </ion-button>
@@ -12,18 +12,17 @@
     <ion-content :fullscreen="true">
       <ion-header collapse="condense">
         <ion-toolbar>
-          <ion-title size="large">Lettura Costante NFC</ion-title>
+          <ion-title size="large">Modalità Monitor</ion-title>
         </ion-toolbar>
       </ion-header>
 
       <div id="container">
         <ion-card>
           <ion-card-header>
-            <ion-card-title>Modalità Lettura Costante</ion-card-title>
-            <ion-card-subtitle>Scansiona, invia e ricevi feedback immediato</ion-card-subtitle>
+            <ion-card-title>Monitor Tag NFC</ion-card-title>
+            <ion-card-subtitle>Scansione e sincronizzazione in tempo reale</ion-card-subtitle>
           </ion-card-header>
           <ion-card-content>
-            <!-- Pulsante per avviare/fermare la modalità continua -->
             <ion-button 
               @click="toggleContinuousMode" 
               expand="block" 
@@ -32,10 +31,9 @@
               style="margin-bottom: 20px;"
             >
               <ion-icon :icon="continuousMode ? stopCircle : scan" slot="start"></ion-icon>
-              {{ continuousMode ? 'Ferma Lettura' : 'Avvia Lettura Costante' }}
+              {{ continuousMode ? 'Interrompi Monitor' : 'Avvia Monitor' }}
             </ion-button>
 
-            <!-- Tag scansionato -->
             <div v-if="currentScannedTag" class="scanned-tag-section">
               <ion-card color="light">
                 <ion-card-content>
@@ -44,7 +42,6 @@
                     <p><strong>Seriale:</strong> {{ currentScannedTag }}</p>
                   </ion-text>
                   
-                  <!-- Pulsante di invio -->
                   <ion-button 
                     @click="sendToAPI" 
                     expand="block" 
@@ -53,18 +50,17 @@
                     style="margin-top: 15px;"
                   >
                     <ion-icon :icon="send" slot="start"></ion-icon>
-                    {{ isProcessing ? 'Invio in corso...' : 'Invia alla API' }}
+                    {{ isProcessing ? 'Sincronizzazione...' : 'Sincronizza' }}
                   </ion-button>
                 </ion-card-content>
               </ion-card>
             </div>
 
-            <!-- Risultato della chiamata API -->
             <div v-if="apiResult" class="api-result-section">
               <ion-card :color="apiResult.success ? 'success' : 'danger'">
                 <ion-card-content>
                   <ion-text :color="apiResult.success ? 'light' : 'light'">
-                    <h3>{{ apiResult.success ? '✅ Successo' : '❌ Errore' }}</h3>
+                    <h3>{{ apiResult.success ? '✅ Sincronizzato' : '❌ Sincronizzazione Fallita' }}</h3>
                     <p>{{ apiResult.message }}</p>
                     <p v-if="apiResult.timestamp" style="font-size: 0.9em; opacity: 0.8;">
                       {{ new Date(apiResult.timestamp).toLocaleTimeString() }}
