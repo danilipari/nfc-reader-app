@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Ricerca Operatore</ion-title>
+        <ion-title>Ricerca Badge</ion-title>
         <ion-button slot="start" fill="clear" @click="goBack">
           <ion-icon :icon="arrowBack"></ion-icon>
         </ion-button>
@@ -12,15 +12,15 @@
     <ion-content :fullscreen="true">
       <ion-header collapse="condense">
         <ion-toolbar>
-          <ion-title size="large">Ricerca Operatore</ion-title>
+          <ion-title size="large">Ricerca Badge</ion-title>
         </ion-toolbar>
       </ion-header>
 
       <div id="container">
         <ion-card>
           <ion-card-header>
-            <ion-card-title>Ricerca Operatore da Tag</ion-card-title>
-            <ion-card-subtitle>Scansiona un tag per trovare l'operatore associato</ion-card-subtitle>
+            <ion-card-title>Ricerca Badge</ion-card-title>
+            <ion-card-subtitle>Scansiona un badge per visualizzare i dati del personale</ion-card-subtitle>
           </ion-card-header>
           <ion-card-content>
             <ion-button 
@@ -41,7 +41,7 @@
                     <p><strong>Seriale:</strong> {{ scannedTag }}</p>
                   </ion-text>
                   <ion-spinner v-if="isLoading" name="crescent" color="primary"></ion-spinner>
-                  <p v-if="isLoading" style="margin-top: 10px;">Ricerca operatore in corso...</p>
+                  <p v-if="isLoading" style="margin-top: 10px;">Ricerca in corso...</p>
                 </ion-card-content>
               </ion-card>
             </div>
@@ -51,7 +51,7 @@
                 <ion-card-header>
                   <ion-card-title>
                     <ion-icon :icon="checkmarkCircle" style="margin-right: 8px;"></ion-icon>
-                    Operatore Trovato
+                    Badge Trovato
                   </ion-card-title>
                 </ion-card-header>
                 <ion-card-content>
@@ -115,7 +115,7 @@
               </ion-card>
             </div>
 
-            <div v-if="searchHistory.length > 0" class="history-section">
+            <div v-if="false" class="history-section"> <!-- searchHistory.length > 0 -->
               <ion-text color="medium">
                 <h4>Ricerche Recenti</h4>
               </ion-text>
@@ -206,7 +206,7 @@ const goBack = () => {
   router.push('/home');
 };
 
-const searchOperator = async (tag: string) => {
+const searchBadge = async (tag: string) => {
   isLoading.value = true;
   errorMessage.value = null;
   operatorData.value = null;
@@ -224,9 +224,9 @@ const searchOperator = async (tag: string) => {
         data: response.data
       });
       
-      showToast('Operatore trovato', 'success');
+      showToast('Badge trovato', 'success');
     } else {
-      errorMessage.value = response.error || 'Operatore non trovato';
+      errorMessage.value = response.error || 'Badge non trovato';
       
       searchHistory.value.push({
         tag,
@@ -274,7 +274,7 @@ const startScanning = async () => {
       showToast(`Tag rilevato: ${data.serial}`, 'success');
       
       // Non fermare isScanning qui, lascia che searchOperator lo gestisca
-      await searchOperator(data.serial);
+      await searchBadge(data.serial);
       
       // Ferma la scansione solo dopo aver ricevuto la risposta
       isScanning.value = false;
@@ -300,7 +300,7 @@ const startScanning = async () => {
 
 const retrySearch = async () => {
   if (scannedTag.value) {
-    await searchOperator(scannedTag.value);
+    await searchBadge(scannedTag.value);
   }
 };
 

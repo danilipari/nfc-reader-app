@@ -19,10 +19,10 @@
             <ion-card-title>Employee NFC</ion-card-title>
           </ion-card-header>
           <ion-card-content>
-            <ion-button @click="startNFCReading" expand="block" :disabled="isReading">
+            <!-- <ion-button @click="startNFCReading" expand="block" :disabled="isReading">
               <ion-icon :icon="scan" slot="start"></ion-icon>
               {{ isReading ? 'Lettura in corso...' : 'Scansiona e Salva' }}
-            </ion-button>
+            </ion-button> -->
             
             <ion-button 
               @click="goToContinuousReader" 
@@ -36,14 +36,14 @@
             </ion-button>
             
             <ion-button 
-              @click="goToOperatorSearch" 
+              @click="goBadgeSearch" 
               expand="block" 
               fill="outline" 
               color="tertiary"
               style="margin-top: 10px;"
             >
               <ion-icon :icon="searchOutline" slot="start"></ion-icon>
-              Ricerca Operatore
+              Ricerca Badge
             </ion-button>
             
             <div v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')" class="nfc-result">
@@ -87,7 +87,7 @@
               </ion-button>
             </div>
             
-            <ion-button 
+            <!-- <ion-button 
               v-if="tagsHistory.length > 0"
               @click="openHistory" 
               expand="block" 
@@ -97,7 +97,7 @@
             >
               <ion-icon :icon="time" slot="start"></ion-icon>
               Gestisci Cronologia ({{ tagsHistory.length }})
-            </ion-button>
+            </ion-button> -->
           </ion-card-content>
         </ion-card>
         <ion-modal :is-open="showConfirmModal" @did-dismiss="cancelConfirm">
@@ -430,7 +430,7 @@ import {
   toastController,
   alertController
 } from '@ionic/vue';
-import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash, searchOutline } from 'ionicons/icons';
+import { send, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash, searchOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -479,8 +479,8 @@ const goToContinuousReader = () => {
   router.push('/continuous-reader');
 };
 
-const goToOperatorSearch = () => {
-  router.push('/operator-search');
+const goBadgeSearch = () => {
+  router.push('/badge-search');
 };
 
 const loadTagsHistory = () => {

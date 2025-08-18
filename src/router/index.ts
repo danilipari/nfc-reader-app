@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import HomePage from '../views/HomePage.vue'
 import ContinuousReaderPage from '../views/ContinuousReaderPage.vue'
-import OperatorSearchPage from '../views/OperatorSearchPage.vue'
+import BadgeSearchPage from '../views/BadgeSearchPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -20,9 +20,9 @@ const routes: Array<RouteRecordRaw> = [
     component: ContinuousReaderPage
   },
   {
-    path: '/operator-search',
-    name: 'OperatorSearch',
-    component: OperatorSearchPage
+    path: '/badge-search',
+    name: 'BadgeSearch',
+    component: BadgeSearchPage
   }
 ]
 
