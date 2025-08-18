@@ -61,7 +61,7 @@
                 <ion-card-content>
                   <ion-text :color="apiResult.success ? 'light' : 'light'">
                     <h3>{{ apiResult.success ? '✅ Sincronizzato' : '❌ Sincronizzazione Fallita' }}</h3>
-                    <p>{{ apiResult.message }}</p>
+                    <!-- <p>{{ apiResult.message }}</p> -->
                     <p v-if="apiResult.timestamp" style="font-size: 0.9em; opacity: 0.8;">
                       {{ new Date(apiResult.timestamp).toLocaleTimeString() }}
                     </p>
