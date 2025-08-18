@@ -35,6 +35,17 @@
               Modalità Monitor
             </ion-button>
             
+            <ion-button 
+              @click="goToOperatorSearch" 
+              expand="block" 
+              fill="outline" 
+              color="tertiary"
+              style="margin-top: 10px;"
+            >
+              <ion-icon :icon="searchOutline" slot="start"></ion-icon>
+              Ricerca Operatore
+            </ion-button>
+            
             <div v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')" class="nfc-result">
               <ion-text color="success">
                 <h3>✓ {{ currentTag.sendStatus === 'completed' ? 'Completato' : 'Inviato' }}</h3>
@@ -419,7 +430,7 @@ import {
   toastController,
   alertController
 } from '@ionic/vue';
-import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash } from 'ionicons/icons';
+import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash, searchOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -466,6 +477,10 @@ const isSelectionMode = ref(false);
 
 const goToContinuousReader = () => {
   router.push('/continuous-reader');
+};
+
+const goToOperatorSearch = () => {
+  router.push('/operator-search');
 };
 
 const loadTagsHistory = () => {

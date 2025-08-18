@@ -32,8 +32,15 @@ export class NFCService {
     onRead: NFCReadCallback, 
     onError: NFCErrorCallback
   ): Promise<boolean> {
-    if (!isPlatform('capacitor') || this.isListenerActive) {
+    if (!isPlatform('capacitor')) {
       return false;
+    }
+    
+    // Se i listener sono già attivi, aggiorna solo i callback
+    if (this.isListenerActive) {
+      this.onReadCallback = onRead;
+      this.onErrorCallback = onError;
+      return true;
     }
     
     try {
