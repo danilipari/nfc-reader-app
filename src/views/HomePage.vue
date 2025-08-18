@@ -890,7 +890,6 @@ const deleteCurrentTag = () => {
   }
 };
 
-// Funzioni per la selezione multipla
 const startSelectionMode = () => {
   isSelectionMode.value = true;
   selectedTagIds.value.clear();
@@ -918,7 +917,6 @@ const deselectAllTags = () => {
   selectedTagIds.value.clear();
 };
 
-// Funzioni di conferma per eliminazione
 const confirmDeleteSingleTag = async (tagId: string) => {
   const alert = await alertController.create({
     header: 'Conferma Eliminazione',
@@ -980,7 +978,6 @@ const deleteSelectedTags = async () => {
         text: 'Elimina Tutti',
         role: 'destructive',
         handler: () => {
-          // Elimina tutti i tag selezionati
           const idsToDelete = Array.from(selectedTagIds.value);
           idsToDelete.forEach(id => deleteHistoryTag(id));
           
@@ -1006,9 +1003,7 @@ const exportHistory = async () => {
     const fileName = `nfc-tags-backup-${new Date().toISOString().split('T')[0]}.json`;
     
     if (isPlatform('capacitor')) {
-      // Su mobile: salva il file e condividilo
       try {
-        // Salva il file nella directory Documents come testo UTF-8
         const result = await Filesystem.writeFile({
           path: fileName,
           data: jsonString,
@@ -1017,7 +1012,6 @@ const exportHistory = async () => {
           recursive: true
         });
         
-        // Condividi il file usando il sistema di condivisione nativo
         const shareResult = await Share.share({
           title: 'Backup Tag NFC',
           text: `Backup di ${tagsHistory.value.length} tag NFC`,
@@ -1030,11 +1024,9 @@ const exportHistory = async () => {
         }
       } catch (shareError) {
         console.error('Share error:', shareError);
-        // Se la condivisione fallisce, almeno il file è salvato
         showToast(`File salvato in Documents: ${fileName}`, 'success');
       }
     } else {
-      // Su web: usa il metodo download standard
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
@@ -1069,21 +1061,15 @@ const handleFileImport = async (event: Event) => {
   try {
     let text = await file.text();
     
-    // Pulisci il testo da eventuali caratteri invisibili all'inizio
-    // Rimuovi BOM e altri caratteri di controllo
     text = text.trim();
     if (text.charCodeAt(0) === 0xFEFF) {
       text = text.slice(1);
     }
-    // Rimuovi eventuali caratteri invisibili all'inizio
     text = text.replace(/^[\x00-\x1F\x7F-\x9F]+/, '');
     
-    // Controlla se il file è in base64 (inizia con caratteri base64 validi ma non è JSON)
     if (!text.startsWith('{') && !text.startsWith('[')) {
-      // Prova a decodificare da base64
       try {
         const decoded = atob(text);
-        // Decodifica da UTF-8
         text = decodeURIComponent(escape(decoded));
         console.log('Decoded from base64');
       } catch (e) {
@@ -1091,33 +1077,27 @@ const handleFileImport = async (event: Event) => {
       }
     }
     
-    console.log('Importing JSON:', text.substring(0, 100)); // Debug: mostra i primi 100 caratteri
+    console.log('Importing JSON:', text.substring(0, 100));
     
     const importedData = JSON.parse(text);
-    
-    // Validazione struttura base
     if (!importedData.tags || !Array.isArray(importedData.tags)) {
       throw new Error('Formato file non valido');
     }
     
-    // Validazione e pulizia dei tag
     const validTags: NFCTag[] = [];
     const existingSerials = new Set(tagsHistory.value.map(t => t.serial));
     let skippedCount = 0;
     
     for (const tag of importedData.tags) {
-      // Validazione campi obbligatori
       if (!tag.serial || !tag.id) {
         continue;
       }
       
-      // Skip tag già esistenti
       if (existingSerials.has(tag.serial)) {
         skippedCount++;
         continue;
       }
       
-      // Costruisci tag valido
       const validTag: NFCTag = {
         id: tag.id,
         serial: tag.serial,
@@ -1138,7 +1118,6 @@ const handleFileImport = async (event: Event) => {
       return;
     }
     
-    // Aggiungi i nuovi tag
     tagsHistory.value = [...tagsHistory.value, ...validTags];
     saveTagsHistory();
     
@@ -1152,7 +1131,6 @@ const handleFileImport = async (event: Event) => {
     showToast('Errore durante l\'importazione: ' + (error instanceof Error ? error.message : 'Formato non valido'), 'danger');
     console.error('Import error:', error);
   } finally {
-    // Reset input
     if (target) {
       target.value = '';
     }

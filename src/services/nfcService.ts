@@ -91,7 +91,6 @@ export class NFCService {
     try {
       let tagContent = '';
       
-      // Parsing da string
       if (data.string && typeof data.string === 'function') {
         const stringMessages = data.string();
         
@@ -110,7 +109,6 @@ export class NFCService {
         }
       }
       
-      // Parsing da numberArray
       if (!tagContent && data.numberArray && typeof data.numberArray === 'function') {
         const numberMessages = data.numberArray();
         
@@ -141,7 +139,6 @@ export class NFCService {
         }
       }
       
-      // Parsing da uint8Array
       if (!tagContent && data.uint8Array && typeof data.uint8Array === 'function') {
         const uint8Messages = data.uint8Array();
         
@@ -181,5 +178,4 @@ export class NFCService {
   }
 }
 
-// Singleton instance
 export const nfcService = new NFCService();

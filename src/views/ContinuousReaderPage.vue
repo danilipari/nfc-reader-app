@@ -106,7 +106,6 @@ import { apiService } from '@/services/apiService';
 
 const router = useRouter();
 
-// Stato della modalità continua
 const continuousMode = ref(false);
 const currentScannedTag = ref<string | null>(null);
 const isProcessing = ref(false);
@@ -144,7 +143,7 @@ const setupNFCListeners = async () => {
         return;
       }
       currentScannedTag.value = data.serial;
-      apiResult.value = null; // Reset del risultato precedente
+      apiResult.value = null;
       showToast(`Tag rilevato: ${data.serial}`, 'success');
     },
     (error) => {
@@ -157,7 +156,6 @@ const setupNFCListeners = async () => {
 
 const toggleContinuousMode = async () => {
   if (!continuousMode.value) {
-    // Avvia modalità continua
     const isSupported = await checkNFCStatus();
     if (!isSupported) {
       return;
@@ -176,7 +174,6 @@ const toggleContinuousMode = async () => {
     apiResult.value = null;
     showToast('Modalità lettura costante attivata', 'primary');
   } else {
-    // Ferma modalità continua
     continuousMode.value = false;
     currentScannedTag.value = null;
     apiResult.value = null;
@@ -225,11 +222,10 @@ const sendToAPI = async () => {
   } finally {
     isProcessing.value = false;
     
-    // Reset del tag corrente dopo l'invio (pronto per il prossimo)
     setTimeout(() => {
       currentScannedTag.value = null;
       apiResult.value = null;
-    }, 2000);
+    }, 1_000);
   }
 };
 

@@ -68,5 +68,4 @@ export class ApiService {
   }
 }
 
-// Singleton instance
 export const apiService = new ApiService();
