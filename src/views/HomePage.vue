@@ -21,7 +21,18 @@
           <ion-card-content>
             <ion-button @click="startNFCReading" expand="block" :disabled="isReading">
               <ion-icon :icon="scan" slot="start"></ion-icon>
-              {{ isReading ? 'Lettura in corso...' : 'Avvia Lettura NFC' }}
+              {{ isReading ? 'Lettura in corso...' : 'Scansiona e Salva' }}
+            </ion-button>
+            
+            <ion-button 
+              @click="goToContinuousReader" 
+              expand="block" 
+              fill="outline" 
+              color="secondary"
+              style="margin-top: 10px;"
+            >
+              <ion-icon :icon="flash" slot="start"></ion-icon>
+              Modalità Lettura Costante
             </ion-button>
             
             <div v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')" class="nfc-result">
@@ -408,9 +419,10 @@ import {
   toastController,
   alertController
 } from '@ionic/vue';
-import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline } from 'ionicons/icons';
+import { scan, send, time, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { NFC } from '@exxili/capacitor-nfc';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { CapacitorHttp } from '@capacitor/core';
@@ -429,6 +441,7 @@ interface NFCTag {
   apiResponse?: any;
 }
 
+const router = useRouter();
 const API_URL = import.meta.env.VITE_API_URL;
 // const API_AUTH = import.meta.env.VITE_API_AUTH;
 const STORAGE_KEY = 'nfc_tags_history';
@@ -452,6 +465,10 @@ const tagForm = ref({
 const selectedHistoryTag = ref<NFCTag | null>(null);
 const selectedTagIds = ref<Set<string>>(new Set());
 const isSelectionMode = ref(false);
+
+const goToContinuousReader = () => {
+  router.push('/continuous-reader');
+};
 
 const loadTagsHistory = () => {
   try {
