@@ -425,9 +425,9 @@ import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { NFC } from '@exxili/capacitor-nfc';
 import { StatusBar, Style } from '@capacitor/status-bar';
-import { CapacitorHttp } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { apiService } from '@/services/apiService';
 
 interface NFCTag {
   id: string;
@@ -442,8 +442,6 @@ interface NFCTag {
 }
 
 const router = useRouter();
-const API_URL = import.meta.env.VITE_API_URL;
-// const API_AUTH = import.meta.env.VITE_API_AUTH;
 const STORAGE_KEY = 'nfc_tags_history';
 
 const isReading = ref(false);
@@ -751,41 +749,13 @@ const callAPI = async () => {
     isCallingAPI.value = true;
     apiResponse.value = '';
     
-    // const requestBody = {
-    //   "jsonrpc": "2.0",
-    //   "id": parseInt(currentTag.value.employeeId || '1'),
-    //   "method": "eAccess.createRfidMedium",
-    //   "params": [{ "uid": currentTag.value.serial }]
-    // };
-
-    const requestPorzioBody = { serial: `${currentTag.value.serial}` };
+    const response = await apiService.sendTagToAPI(currentTag.value.serial);
     
-    console.log('API Request:', JSON.stringify(requestPorzioBody, null, 2));
-    
-    const response = await CapacitorHttp.request({
-      url: API_URL,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // 'Authorization': API_AUTH
-      },
-      data: requestPorzioBody
-    });
-    
-    console.log('API Response Status:', response.status);
-    
-    if (response.status >= 200 && response.status < 300) {
-      const result = response.data;
-      console.log('API Response Body:', JSON.stringify(result, null, 2));
-      
-      if (result.error) {
-        console.error('API Error:', JSON.stringify(result.error, null, 2));
-        throw new Error(result.error.message || 'Errore nella risposta');
-      }
+    if (response.success) {
       currentTag.value.sendStatus = 'completed';
       currentTag.value.lastSent = Date.now();
       currentTag.value.lastUpdate = Date.now();
-      currentTag.value.apiResponse = result;
+      currentTag.value.apiResponse = response.data;
       apiResponse.value = `Tag NFC registrato con successo! (${response.status})`;
       showToast(`Tag NFC registrato con successo! Status: ${response.status}`, 'success');
       
@@ -795,8 +765,9 @@ const callAPI = async () => {
         saveTagsHistory();
       }
     } else {
-      console.error('API Error Response:', response.status, response.data);
-      throw new Error(`Errore HTTP ${response.status}: ${response.data || 'Errore sconosciuto'}`);
+      currentTag.value.sendStatus = 'error';
+      apiResponse.value = `Errore: ${response.error}`;
+      showToast(`Errore API: ${response.error}`, 'danger');
     }
     
   } catch (error) {

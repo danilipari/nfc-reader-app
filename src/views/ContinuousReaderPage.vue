@@ -100,20 +100,17 @@ import {
   toastController
 } from '@ionic/vue';
 import { scan, send, arrowBack, stopCircle } from 'ionicons/icons';
-import { isPlatform } from '@ionic/vue';
-import { NFC } from '@exxili/capacitor-nfc';
-import { CapacitorHttp } from '@capacitor/core';
 import { useRouter } from 'vue-router';
+import { nfcService } from '@/services/nfcService';
+import { apiService } from '@/services/apiService';
 
 const router = useRouter();
-const API_URL = import.meta.env.VITE_API_URL;
 
 // Stato della modalità continua
 const continuousMode = ref(false);
 const currentScannedTag = ref<string | null>(null);
 const isProcessing = ref(false);
 const apiResult = ref<{ success: boolean; message: string; timestamp?: number } | null>(null);
-const nfcListenersActive = ref(false);
 
 const showToast = async (message: string, color: string = 'primary') => {
   const toast = await toastController.create({
@@ -133,147 +130,46 @@ const goBack = () => {
 };
 
 const checkNFCStatus = async () => {
-  if (!isPlatform('capacitor')) {
-    return false;
+  const supported = await nfcService.isSupported();
+  if (!supported) {
+    showToast('NFC non è supportato su questo dispositivo.', 'warning');
   }
-  
-  try {
-    const { supported } = await NFC.isSupported();
-    if (!supported) {
-      showToast('NFC non è supportato su questo dispositivo.', 'warning');
-    }
-    return supported;
-  } catch (error) {
-    showToast('Errore durante la verifica dello stato NFC', 'danger');
-    return false;
-  }
+  return supported;
 };
 
 const setupNFCListeners = async () => {
-  if (!isPlatform('capacitor') || nfcListenersActive.value) {
-    return;
-  }
-  
-  try {
-    NFC.onRead((data: any) => {
+  const success = await nfcService.setupListeners(
+    (data) => {
       if (!continuousMode.value || isProcessing.value) {
         return;
       }
-      
-      try {
-        let tagContent = '';
-        
-        // Stessa logica di parsing della HomePage
-        if (data.string && typeof data.string === 'function') {
-          const stringMessages = data.string();
-          
-          if (stringMessages && stringMessages.messages && Array.isArray(stringMessages.messages)) {
-            for (const message of stringMessages.messages) {
-              if (message.records && Array.isArray(message.records)) {
-                for (const record of message.records) {
-                  if (record.payload && typeof record.payload === 'string') {
-                    tagContent = record.payload;
-                    break;
-                  }
-                }
-              }
-              if (tagContent) break;
-            }
-          }
-        }
-        
-        if (!tagContent && data.numberArray && typeof data.numberArray === 'function') {
-          const numberMessages = data.numberArray();
-          
-          if (numberMessages && numberMessages.messages && Array.isArray(numberMessages.messages)) {
-            for (const message of numberMessages.messages) {
-              if (message.records && Array.isArray(message.records)) {
-                for (const record of message.records) {
-                  if (Array.isArray(record.payload) && record.payload.length > 0) {
-                    const asciiString = (record.payload as number[])
-                      .map((byte: number) => String.fromCharCode(byte))
-                      .join('');
-                    
-                    if (asciiString.length % 2 === 0) {
-                      const hexBytes = asciiString.match(/.{2}/g) || [];
-                      const reversedBytes = hexBytes.reverse();
-                      tagContent = reversedBytes.join(':').toUpperCase();
-                    } else {
-                      tagContent = (record.payload as number[])
-                        .map((byte: number) => byte.toString(16).padStart(2, '0').toUpperCase())
-                        .join(':');
-                    }
-                    break;
-                  }
-                }
-              }
-              if (tagContent) break;
-            }
-          }
-        }
-        
-        if (!tagContent && data.uint8Array && typeof data.uint8Array === 'function') {
-          const uint8Messages = data.uint8Array();
-          
-          if (uint8Messages && uint8Messages.messages && Array.isArray(uint8Messages.messages)) {
-            for (const message of uint8Messages.messages) {
-              if (message.records && Array.isArray(message.records)) {
-                for (const record of message.records) {
-                  if (record.payload instanceof Uint8Array && record.payload.length > 0) {
-                    tagContent = Array.from(record.payload as Uint8Array)
-                      .map((byte: number) => byte.toString(16).padStart(2, '0').toUpperCase())
-                      .join(':');
-                    break;
-                  }
-                }
-              }
-              if (tagContent) break;
-            }
-          }
-        }
-        
-        if (tagContent) {
-          currentScannedTag.value = tagContent;
-          apiResult.value = null; // Reset del risultato precedente
-          showToast(`Tag rilevato: ${tagContent}`, 'success');
-        } else {
-          showToast('Tag NFC rilevato ma senza dati NDEF', 'warning');
-        }
-        
-      } catch (error) {
-        showToast('Errore durante l\'elaborazione del tag NFC', 'danger');
-      }
-    });
-    
-    NFC.onError((error) => {
-      showToast('Errore NFC: ' + error.error, 'danger');
-    });
-    
-    nfcListenersActive.value = true;
-    
-  } catch (error) {
-    showToast('Errore durante l\'inizializzazione NFC', 'danger');
-  }
+      currentScannedTag.value = data.serial;
+      apiResult.value = null; // Reset del risultato precedente
+      showToast(`Tag rilevato: ${data.serial}`, 'success');
+    },
+    (error) => {
+      showToast(error, 'danger');
+    }
+  );
+  
+  return success;
 };
 
 const toggleContinuousMode = async () => {
   if (!continuousMode.value) {
     // Avvia modalità continua
-    if (!isPlatform('capacitor')) {
-      showToast('NFC non disponibile in modalità web', 'warning');
-      return;
-    }
-    
     const isSupported = await checkNFCStatus();
     if (!isSupported) {
       return;
     }
     
-    await setupNFCListeners();
-    
-    if (isPlatform('ios')) {
-      await NFC.startScan();
+    const listenersSetup = await setupNFCListeners();
+    if (!listenersSetup) {
+      showToast('Errore nell\'inizializzazione NFC', 'danger');
+      return;
     }
+    
+    await nfcService.startScan();
     
     continuousMode.value = true;
     currentScannedTag.value = null;
@@ -296,24 +192,9 @@ const sendToAPI = async () => {
   isProcessing.value = true;
   
   try {
-    const requestBody = { serial: currentScannedTag.value };
+    const response = await apiService.sendTagToAPI(currentScannedTag.value);
     
-    const response = await CapacitorHttp.request({
-      url: API_URL,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: requestBody
-    });
-    
-    if (response.status >= 200 && response.status < 300) {
-      const result = response.data;
-      
-      if (result.error) {
-        throw new Error(result.error.message || 'Errore nella risposta');
-      }
-      
+    if (response.success) {
       apiResult.value = {
         success: true,
         message: `Successo! Status: ${response.status}`,
@@ -322,7 +203,13 @@ const sendToAPI = async () => {
       
       showToast('Tag inviato con successo!', 'success');
     } else {
-      throw new Error(`Errore HTTP ${response.status}`);
+      apiResult.value = {
+        success: false,
+        message: response.error || 'Errore sconosciuto',
+        timestamp: Date.now()
+      };
+      
+      showToast(`Errore: ${response.error}`, 'danger');
     }
     
   } catch (error) {
@@ -355,14 +242,7 @@ onUnmounted(async () => {
     continuousMode.value = false;
   }
   
-  if (isPlatform('capacitor') && nfcListenersActive.value) {
-    try {
-      await NFC.removeAllListeners('nfcTag');
-      await NFC.removeAllListeners('nfcError');
-    } catch (error) {
-      console.warn('Errore durante la rimozione dei listener NFC:', error);
-    }
-  }
+  await nfcService.removeListeners();
 });
 </script>
 
