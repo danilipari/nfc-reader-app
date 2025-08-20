@@ -20,6 +20,7 @@ npm-debug.log*
 /.sourcemaps
 /.versions
 /.vscode/*
+/.cl*
 !/.vscode/extensions.json
 /coverage
 /dist
