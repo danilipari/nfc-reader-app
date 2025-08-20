@@ -17,7 +17,8 @@
     "dev:android": "npm run build && npx cap sync && adb install -r android/app/build/outputs/apk/debug/app-debug.apk && npm run launch:apk",
     "update:android": "npm run build && npx cap sync && adb install -r android/app/build/outputs/apk/debug/app-debug.apk && npm run launch:apk",
     "log:android": "adb logcat | grep -i console",
-    "sync-cap:android": "npx cap sync android && npx cap run android"
+    "sync-cap:android": "npx cap sync android && npx cap run android",
+    "install:assets": "npm install --save-dev @capacitor/assets"
   },
   "dependencies": {
     "@capacitor/android": "7.4.2",
@@ -36,6 +37,7 @@
     "vue-router": "^4.2.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "7.4.2",
     "@vitejs/plugin-legacy": "^5.0.0",
     "@vitejs/plugin-vue": "^4.0.0",

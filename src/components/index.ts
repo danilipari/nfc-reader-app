@@ -13,6 +13,7 @@ export { default as ActionGrid } from './ActionGrid.vue'
 export { default as LoadingState } from './LoadingState.vue'
 export { default as ErrorDisplay } from './ErrorDisplay.vue'
 export { default as HeroSection } from './HeroSection.vue'
+export { default as SplashScreen } from './SplashScreen.vue'
 
 export type MaterialCardProps = {
   variant?: 'elevated' | 'filled' | 'outlined'
