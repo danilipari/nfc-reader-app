@@ -212,7 +212,7 @@ const searchBadge = async (tag: string) => {
   operatorData.value = null;
   
   try {
-    const response = await apiService.sendTagToAPI(tag);
+    const response = await apiService.searchBySerial(tag);
     
     if (response.success) {
       operatorData.value = response.data;
