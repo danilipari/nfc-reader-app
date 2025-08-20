@@ -9,7 +9,9 @@
           @click="goBack"
           class="back-button"
         >
-          <ion-icon :icon="arrowBack"></ion-icon>
+          <template #icon>
+            <ion-icon :icon="arrowBack"></ion-icon>
+          </template>
         </MaterialButton>
       </ion-toolbar>
     </ion-header>
@@ -25,7 +27,9 @@
               class="monitor-button"
               :class="{ 'monitor-active': continuousMode }"
             >
-              <ion-icon :icon="continuousMode ? stopCircle : scan" slot="start"></ion-icon>
+              <template #icon>
+                <ion-icon :icon="continuousMode ? stopCircle : scan"></ion-icon>
+              </template>
               {{ continuousMode ? 'Interrompi Monitor' : 'Avvia Monitor' }}
             </MaterialButton>
 
@@ -41,7 +45,9 @@
                     :disabled="isProcessing || !continuousMode"
                     class="sync-button"
                   >
-                    <ion-icon :icon="send" slot="start"></ion-icon>
+                    <template #icon>
+                      <ion-icon :icon="send"></ion-icon>
+                    </template>
                     {{ isProcessing ? 'Sincronizzazione...' : 'Sincronizza' }}
                   </MaterialButton>
                 </div>

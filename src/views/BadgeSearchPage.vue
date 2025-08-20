@@ -9,7 +9,9 @@
           @click="goBack"
           class="back-button"
         >
-          <ion-icon :icon="arrowBack"></ion-icon>
+          <template #icon>
+            <ion-icon :icon="arrowBack"></ion-icon>
+          </template>
         </MaterialButton>
       </ion-toolbar>
     </ion-header>
@@ -25,7 +27,9 @@
               :disabled="isScanning || isLoading"
               class="scan-button"
             >
-              <ion-icon :icon="search" slot="start"></ion-icon>
+              <template #icon>
+                <ion-icon :icon="search"></ion-icon>
+              </template>
               {{ isScanning ? 'Scansione in corso...' : 'Scansiona Tag' }}
             </MaterialButton>
 
@@ -58,7 +62,9 @@
                     variant="outlined"
                     class="new-search-button"
                   >
-                    <ion-icon :icon="refresh" slot="start"></ion-icon>
+                    <template #icon>
+                      <ion-icon :icon="refresh"></ion-icon>
+                    </template>
                     Nuova Ricerca
                   </MaterialButton>
                 </div>
@@ -84,7 +90,9 @@
                       :disabled="isLoading"
                       class="retry-button"
                     >
-                      <ion-icon :icon="reload" slot="start"></ion-icon>
+                      <template #icon>
+                        <ion-icon :icon="reload"></ion-icon>
+                      </template>
                       {{ isLoading ? 'Riprovando...' : 'Riprova' }}
                     </MaterialButton>
                     
@@ -93,7 +101,9 @@
                       variant="outlined"
                       class="reset-button"
                     >
-                      <ion-icon :icon="refresh" slot="start"></ion-icon>
+                      <template #icon>
+                        <ion-icon :icon="refresh"></ion-icon>
+                      </template>
                       Reset
                     </MaterialButton>
                   </div>
