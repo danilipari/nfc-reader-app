@@ -14,137 +14,133 @@
       </ion-header>
 
       <div id="container">
-        <!-- Main Card with Material Design 3 -->
-        <MaterialCard variant="elevated">
-          <template #header>
-            <div 
-              @dblclick="toggleDebugMode" 
-              class="card-header-title"
-              :class="{ 'debug-active': debugMode }"
+        <!-- Hero Section -->
+        <HeroSection
+          title="NFC Tag Reader"
+          description="Scansiona, gestisci e monitora i tag NFC"
+          :icon="debugMode ? bugOutline : undefined"
+          variant="primary"
+          size="medium"
+          @dblclick="toggleDebugMode"
+        >
+          <template #actions>
+            <MaterialButton 
+              v-if="debugMode" 
+              @click="startNFCReading" 
+              variant="elevated"
+              size="large"
+              :disabled="isReading"
             >
-              <h2>Employee NFC</h2>
-              <ion-icon v-if="debugMode" :icon="bugOutline" class="debug-icon"></ion-icon>
-            </div>
-          </template>
-            <!-- Loading state when scanning -->
-            <LoadingState 
-              v-if="isReading"
-              type="spinner"
-              title="Scansione in corso..."
-              message="Avvicina il tag NFC al dispositivo"
-              variant="inline"
-            />
-            
-            <!-- Main action buttons -->
-            <div v-if="!isReading && !currentTag" class="action-buttons">
-              <MaterialButton 
-                v-if="debugMode" 
-                @click="startNFCReading" 
-                variant="filled"
-                size="large"
-                :disabled="isReading"
-              >
-                <template #icon>
-                  <ion-icon :icon="scan"></ion-icon>
-                </template>
-                Scansiona e Salva
-              </MaterialButton>
-            
-              <MaterialButton 
-                @click="goToContinuousReader" 
-                variant="outlined"
-                size="medium"
-              >
-                <template #icon>
-                  <ion-icon :icon="flash"></ion-icon>
-                </template>
-                Modalità Monitor
-              </MaterialButton>
-              
-              <MaterialButton 
-                @click="goBadgeSearch" 
-                variant="outlined"
-                size="medium"
-              >
-                <template #icon>
-                  <ion-icon :icon="searchOutline"></ion-icon>
-                </template>
-                Ricerca Badge
-              </MaterialButton>
-            </div>
-            
-            <!-- Success Status Display -->
-            <StatusDisplay
-              v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')"
-              status="success"
-              :title="currentTag.sendStatus === 'completed' ? 'Tag Completato' : 'Tag Inviato'"
-              :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
-              :details="[
-                { label: 'Seriale', value: currentTag.serial },
-                { label: 'Ultimo aggiornamento', value: currentTag.lastUpdate ? new Date(currentTag.lastUpdate).toLocaleString() : 'N/A' }
-              ]"
-              variant="card"
-            />
-            
-            <!-- Pending Status Display -->
-            <StatusDisplay
-              v-else-if="currentTag && currentTag.sendStatus === 'pending'"
-              status="info"
-              title="Tag Confermato"
-              :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
-              :details="[
-                { label: 'Seriale', value: currentTag.serial },
-                { label: 'Stato', value: 'In attesa di invio' }
-              ]"
-              variant="card"
-            >
-              <template #actions>
-                <MaterialButton 
-                  v-if="debugMode"
-                  @click="callAPI" 
-                  variant="filled"
-                  size="small"
-                  :loading="isCallingAPI"
-                >
-                  <template #icon>
-                    <ion-icon :icon="send"></ion-icon>
-                  </template>
-                  Salva nel Sistema
-                </MaterialButton>
+              <template #icon>
+                <ion-icon :icon="scan"></ion-icon>
               </template>
-            </StatusDisplay>
-            
-            <!-- Error Display -->
-            <ErrorDisplay
-              v-else-if="currentTag && currentTag.sendStatus === 'error'"
-              type="network"
-              title="Errore Invio Tag"
-              :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
-              :details="`Seriale: ${currentTag.serial}`"
-              :suggestions="[
-                'Verifica la connessione di rete',
-                'Controlla che il servizio sia attivo',
-                'Riprova tra qualche secondo'
-              ]"
-              retryable
-              dismissible
-              @retry="retryAPI"
-              @dismiss="() => currentTag = null"
-            />
-            
-            <!-- Debug Mode Actions -->
-            <div v-if="debugMode && tagsHistory.length > 0" class="debug-actions">
+              Scansiona Tag
+            </MaterialButton>
+          </template>
+        </HeroSection>
+
+        <!-- Loading state when scanning -->
+        <LoadingState 
+          v-if="isReading"
+          type="spinner"
+          title="Scansione in corso..."
+          message="Avvicina il tag NFC al dispositivo"
+          variant="default"
+        />
+        
+        <!-- Quick Actions Grid -->
+        <MaterialCard v-if="!isReading && !currentTag" variant="elevated">
+          <template #header>
+            <h3 class="section-title">Azioni Rapide</h3>
+          </template>
+          
+          <ActionGrid
+            :actions="quickActions"
+            columns="auto"
+            gap="medium"
+            responsive
+            @action="handleQuickAction"
+          />
+        </MaterialCard>
+        
+        <!-- Tag Status Display -->
+        <MaterialCard v-if="currentTag" variant="elevated">
+          <!-- Success Status Display -->
+          <StatusDisplay
+            v-if="currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed'"
+            status="success"
+            :title="currentTag.sendStatus === 'completed' ? 'Tag Completato' : 'Tag Inviato'"
+            :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
+            :details="[
+              { label: 'Seriale', value: currentTag.serial },
+              { label: 'Ultimo aggiornamento', value: currentTag.lastUpdate ? new Date(currentTag.lastUpdate).toLocaleString() : 'N/A' }
+            ]"
+            variant="card"
+          />
+          
+          <!-- Pending Status Display -->
+          <StatusDisplay
+            v-else-if="currentTag.sendStatus === 'pending'"
+            status="info"
+            title="Tag Confermato"
+            :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
+            :details="[
+              { label: 'Seriale', value: currentTag.serial },
+              { label: 'Stato', value: 'In attesa di invio' }
+            ]"
+            variant="card"
+          >
+            <template #actions>
               <MaterialButton 
-                @click="openHistory" 
-                variant="tonal"
-                size="medium"
+                v-if="debugMode"
+                @click="callAPI" 
+                variant="filled"
+                size="small"
+                :loading="isCallingAPI"
               >
                 <template #icon>
-                  <ion-icon :icon="time"></ion-icon>
+                  <ion-icon :icon="send"></ion-icon>
                 </template>
-                Gestisci Cronologia ({{ tagsHistory.length }})
+                Salva nel Sistema
               </MaterialButton>
-            </div>
+            </template>
+          </StatusDisplay>
+          
+          <!-- Error Display -->
+          <ErrorDisplay
+            v-else-if="currentTag.sendStatus === 'error'"
+            type="network"
+            title="Errore Invio Tag"
+            :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
+            :details="`Seriale: ${currentTag.serial}`"
+            :suggestions="[
+              'Verifica la connessione di rete',
+              'Controlla che il servizio sia attivo',
+              'Riprova tra qualche secondo'
+            ]"
+            retryable
+            dismissible
+            @retry="retryAPI"
+            @dismiss="() => currentTag = null"
+          />
+        </MaterialCard>
+        
+        <!-- Debug Section -->
+        <MaterialCard v-if="debugMode" variant="outlined">
+          <template #header>
+            <h3 class="section-title">
+              <ion-icon :icon="bugOutline" class="debug-icon"></ion-icon>
+              Strumenti Debug
+            </h3>
+          </template>
+          
+          <ActionGrid
+            :actions="debugActions"
+            columns="auto"
+            gap="small"
+            responsive
+            @action="handleDebugAction"
+          />
         </MaterialCard>
         <ion-modal :is-open="showConfirmModal" @did-dismiss="cancelConfirm">
           <ion-header>
@@ -449,7 +445,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { 
   IonContent, 
   IonHeader, 
@@ -476,7 +472,7 @@ import {
   toastController,
   alertController
 } from '@ionic/vue';
-import { send, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash, searchOutline, scan, time, bugOutline } from 'ionicons/icons';
+import { send, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, scan, bugOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -490,7 +486,9 @@ import {
   MaterialButton, 
   StatusDisplay, 
   LoadingState, 
-  ErrorDisplay, 
+  ErrorDisplay,
+  HeroSection,
+  ActionGrid,
 } from '@/components';
 
 interface NFCTag {
@@ -529,12 +527,61 @@ const selectedHistoryTag = ref<NFCTag | null>(null);
 const selectedTagIds = ref<Set<string>>(new Set());
 const isSelectionMode = ref(false);
 
+// Computed properties for action grids
+const quickActions = computed(() => [
+  {
+    id: 'continuous-reader',
+    label: 'Monitor Continuo',
+    iconName: 'flash',
+    variant: 'filled' as const,
+    action: () => goToContinuousReader()
+  },
+  {
+    id: 'badge-search',
+    label: 'Ricerca Badge',
+    iconName: 'search-outline',
+    variant: 'outlined' as const,
+    action: () => goBadgeSearch()
+  }
+]);
+
+const debugActions = computed(() => [
+  {
+    id: 'scan-tag',
+    label: 'Scansiona Tag',
+    iconName: 'scan',
+    variant: 'filled' as const,
+    disabled: isReading.value,
+    action: () => startNFCReading()
+  },
+  {
+    id: 'history',
+    label: `Cronologia (${tagsHistory.value.length})`,
+    iconName: 'time',
+    variant: 'tonal' as const,
+    disabled: tagsHistory.value.length === 0,
+    action: () => openHistory()
+  }
+]);
+
 const goToContinuousReader = () => {
   router.push('/continuous-reader');
 };
 
 const goBadgeSearch = () => {
   router.push('/badge-search');
+};
+
+const handleQuickAction = (action: any) => {
+  if (action.action && typeof action.action === 'function') {
+    action.action();
+  }
+};
+
+const handleDebugAction = (action: any) => {
+  if (action.action && typeof action.action === 'function') {
+    action.action();
+  }
 };
 
 const loadTagsHistory = () => {
@@ -1250,96 +1297,289 @@ onUnmounted(async () => {
 
 <style scoped>
 #container {
-  padding: 20px;
-  max-width: 800px;
+  --md-sys-color-surface: #fef7ff;
+  --md-sys-color-on-surface: #1d1b20;
+  --md-sys-color-surface-variant: #f3effa;
+  --md-sys-color-outline-variant: #cac4d0;
+  
+  padding: 24px;
+  max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+  background: var(--md-sys-color-surface);
 }
 
-/* Material Card adjustments */
+/* Modern card spacing and layout */
 :deep(.md-card) {
-  margin-bottom: 20px;
+  margin-bottom: 32px;
+  backdrop-filter: blur(20px);
+  background: color-mix(in srgb, var(--md-sys-color-surface) 95%, transparent);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Card header styling */
-.card-header-title {
-  cursor: pointer;
-  user-select: none;
-  padding: 8px 0;
+:deep(.md-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.24);
+}
+
+/* Enhanced section titles */
+.section-title {
+  margin: 0 0 20px 0;
+  font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--md-sys-color-on-surface, #1d1b20);
   display: flex;
   align-items: center;
   gap: 12px;
+  letter-spacing: 0.15px;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    var(--md-sys-color-outline-variant) 0%, 
+    transparent 100%);
+  margin-left: 16px;
+}
+
+/* Enhanced card header styling */
+.card-header-title {
+  cursor: pointer;
+  user-select: none;
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+}
+
+.card-header-title:hover {
+  background: rgba(103, 80, 164, 0.04);
+  transform: translateX(4px);
 }
 
 .card-header-title h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 500;
+  font-size: 26px;
+  font-weight: 400;
   color: var(--md-sys-color-on-surface, #1d1b20);
+  letter-spacing: -0.25px;
 }
 
+/* Enhanced debug styling */
 .debug-icon {
   color: #ff9800;
   font-size: 20px;
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 4px rgba(255, 152, 0, 0.3));
 }
 
 .debug-active {
-  background-color: rgba(255, 152, 0, 0.1);
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px dashed #ff9800;
+  background: linear-gradient(135deg, 
+    rgba(255, 152, 0, 0.08) 0%, 
+    rgba(255, 152, 0, 0.04) 100%);
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  backdrop-filter: blur(10px);
+  animation: pulse 2s ease-in-out infinite;
 }
 
-/* Action buttons layout */
+@keyframes pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 0 8px rgba(255, 152, 0, 0);
+  }
+}
+
+/* Modern action buttons layout */
 .action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 20px 0;
+  display: grid;
+  gap: 16px;
+  margin: 32px 0;
+  grid-template-columns: 1fr;
 }
 
-/* Debug actions */
+/* Enhanced debug actions */
 .debug-actions {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  margin-top: 32px;
+  padding: 24px 0 0 0;
+  position: relative;
 }
 
-/* Ensure Material components take full width */
+.debug-actions::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--md-sys-color-outline-variant) 20%, 
+    var(--md-sys-color-outline-variant) 80%, 
+    transparent 100%);
+}
+
+/* Enhanced Material components */
 :deep(.md-button) {
   width: 100%;
+  border-radius: 24px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 :deep(.md-status),
 :deep(.md-error),
 :deep(.md-loading) {
-  margin: 16px 0;
+  margin: 24px 0;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
 }
 
-/* Responsive design */
-@media (min-width: 768px) {
+/* Enhanced loading state */
+:deep(.md-loading) {
+  background: linear-gradient(135deg, 
+    rgba(103, 80, 164, 0.05) 0%, 
+    rgba(103, 80, 164, 0.02) 100%);
+  border: 1px solid rgba(103, 80, 164, 0.1);
+}
+
+/* Enhanced status display */
+:deep(.md-status) {
+  background: linear-gradient(135deg, 
+    rgba(76, 175, 80, 0.05) 0%, 
+    rgba(76, 175, 80, 0.02) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.1);
+}
+
+/* Enhanced error display */
+:deep(.md-error) {
+  background: linear-gradient(135deg, 
+    rgba(244, 67, 54, 0.05) 0%, 
+    rgba(244, 67, 54, 0.02) 100%);
+  border: 1px solid rgba(244, 67, 54, 0.1);
+}
+
+/* Advanced responsive design */
+@media (min-width: 480px) {
   #container {
-    padding: 40px;
+    padding: 32px;
   }
   
   .action-buttons {
-    flex-direction: row;
-    justify-content: center;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 768px) {
+  #container {
+    padding: 48px;
+  }
+  
+  .action-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
   }
   
   :deep(.md-button) {
     width: auto;
     min-width: 200px;
   }
+  
+  .section-title {
+    font-size: 24px;
+  }
 }
 
-/* Dark mode support */
+@media (min-width: 1024px) {
+  #container {
+    padding: 64px;
+  }
+  
+  :deep(.md-card) {
+    margin-bottom: 40px;
+  }
+}
+
+/* Enhanced dark mode support */
 @media (prefers-color-scheme: dark) {
+  #container {
+    --md-sys-color-surface: #141218;
+    --md-sys-color-on-surface: #e6e0e9;
+    --md-sys-color-surface-variant: #49454f;
+    --md-sys-color-outline-variant: #4a4458;
+  }
+  
   .card-header-title h2 {
     color: var(--md-sys-color-on-surface, #e6e0e9);
   }
   
-  .debug-actions {
-    border-top-color: rgba(255, 255, 255, 0.12);
+  .card-header-title:hover {
+    background: rgba(208, 188, 255, 0.04);
+  }
+  
+  .debug-active {
+    background: linear-gradient(135deg, 
+      rgba(255, 152, 0, 0.12) 0%, 
+      rgba(255, 152, 0, 0.06) 100%);
+    border-color: rgba(255, 152, 0, 0.3);
+  }
+}
+
+/* Performance optimizations */
+:deep(.md-card),
+:deep(.md-button),
+.section-title,
+.card-header-title {
+  will-change: transform;
+  contain: layout style paint;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  :deep(.md-card),
+  :deep(.md-button),
+  .card-header-title,
+  .debug-active {
+    animation: none;
+    transition: none;
+  }
+  
+  :deep(.md-card:hover),
+  .card-header-title:hover {
+    transform: none;
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  :deep(.md-card) {
+    border-width: 2px;
+  }
+  
+  .section-title::after {
+    height: 2px;
+  }
+  
+  .debug-active {
+    border-width: 2px;
   }
 }
 </style>
