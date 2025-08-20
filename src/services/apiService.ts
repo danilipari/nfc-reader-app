@@ -18,8 +18,6 @@ export class ApiService {
     try {
       const requestBody = { serial };
       
-      console.log('API Request:', JSON.stringify(requestBody, null, 2));
-      
       const response = await CapacitorHttp.request({
         url: `${this.baseUrl}/api/serial`,
         method: 'POST',
@@ -29,14 +27,10 @@ export class ApiService {
         data: requestBody
       });
       
-      console.log('API Response Status:', response.status);
-      
       if (response.status >= 200 && response.status < 300) {
         const result = response.data;
-        console.log('API Response Body:', JSON.stringify(result, null, 2));
         
         if (result.error) {
-          console.error('API Error:', JSON.stringify(result.error, null, 2));
           return {
             success: false,
             error: result.error.message || 'Errore nella risposta',
@@ -50,7 +44,6 @@ export class ApiService {
           data: result
         };
       } else {
-        console.error('API Error Response:', response.status, response.data);
         return {
           success: false,
           error: `Errore HTTP ${response.status}: ${response.data || 'Errore sconosciuto'}`,
