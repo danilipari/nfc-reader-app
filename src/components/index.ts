@@ -12,6 +12,7 @@ export { default as StatusDisplay } from './StatusDisplay.vue'
 export { default as ActionGrid } from './ActionGrid.vue'
 export { default as LoadingState } from './LoadingState.vue'
 export { default as ErrorDisplay } from './ErrorDisplay.vue'
+export { default as HeroSection } from './HeroSection.vue'
 
 export type MaterialCardProps = {
   variant?: 'elevated' | 'filled' | 'outlined'
@@ -92,4 +93,14 @@ export type ErrorDisplayProps = {
   dismissLabel?: string
   detailsLabel?: string
   suggestionsLabel?: string
+}
+
+export type HeroSectionProps = {
+  title?: string
+  description?: string
+  icon?: string
+  variant?: 'primary' | 'secondary' | 'surface' | 'gradient'
+  size?: 'compact' | 'medium' | 'large'
+  showPattern?: boolean
+  centered?: boolean
 }
