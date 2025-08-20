@@ -20,7 +20,7 @@
           description="Scansiona, gestisci e monitora i tag NFC"
           :icon="debugMode ? bugOutline : undefined"
           variant="primary"
-          size="medium"
+          size="compact"
           @dblclick="toggleDebugMode"
         >
           <template #actions>
