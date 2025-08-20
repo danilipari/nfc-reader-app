@@ -14,107 +14,138 @@
       </ion-header>
 
       <div id="container">
-        <ion-card>
-          <ion-card-header>
-            <ion-card-title @dblclick="toggleDebugMode" style="cursor: pointer; user-select: none; padding: 4px 8px;" :class="{ 'debug-active': debugMode }">Employee NFC
-              <ion-icon v-if="debugMode" :icon="bugOutline" style="margin-left: 8px; color: var(--ion-color-warning);" size="small"></ion-icon>
-            </ion-card-title>
-          </ion-card-header>
-          <ion-card-content>
-            <ion-button v-if="debugMode" @click="startNFCReading" expand="block" :disabled="isReading">
-              <ion-icon :icon="scan" slot="start"></ion-icon>
-              {{ isReading ? 'Lettura in corso...' : 'Scansiona e Salva' }}
-            </ion-button>
-            
-            <ion-button 
-              @click="goToContinuousReader" 
-              expand="block" 
-              fill="outline" 
-              color="secondary"
-              style="margin-top: 10px;"
+        <!-- Main Card with Material Design 3 -->
+        <MaterialCard variant="elevated">
+          <template #header>
+            <div 
+              @dblclick="toggleDebugMode" 
+              class="card-header-title"
+              :class="{ 'debug-active': debugMode }"
             >
-              <ion-icon :icon="flash" slot="start"></ion-icon>
-              Modalità Monitor
-            </ion-button>
-            
-            <ion-button 
-              @click="goBadgeSearch" 
-              expand="block" 
-              fill="outline" 
-              color="tertiary"
-              style="margin-top: 10px;"
-            >
-              <ion-icon :icon="searchOutline" slot="start"></ion-icon>
-              Ricerca Badge
-            </ion-button>
-            
-            <div v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')" class="nfc-result">
-              <ion-text color="success">
-                <h3>✓ {{ currentTag.sendStatus === 'completed' ? 'Completato' : 'Inviato' }}</h3>
-                <p>{{ currentTag.serial }}</p>
-                <p><strong>{{ currentTag.name || 'Senza nome' }}</strong> - ID: {{ currentTag.employeeId }}</p>
-                <p v-if="currentTag.lastUpdate" style="font-size: 0.8em; color: var(--ion-color-medium);">
-                  Ultimo aggiornamento: {{ new Date(currentTag.lastUpdate).toLocaleString() }}
-                </p>
-              </ion-text>
+              <h2>Employee NFC</h2>
+              <ion-icon v-if="debugMode" :icon="bugOutline" class="debug-icon"></ion-icon>
             </div>
+          </template>
+            <!-- Loading state when scanning -->
+            <LoadingState 
+              v-if="isReading"
+              type="spinner"
+              title="Scansione in corso..."
+              message="Avvicina il tag NFC al dispositivo"
+              variant="inline"
+            />
             
-            <div v-else-if="currentTag && currentTag.sendStatus === 'pending'" class="nfc-result">
-              <ion-text>
-                <h3>Tag Confermato</h3>
-                <p>{{ currentTag.serial }}</p>
-                <p><strong>{{ currentTag.name || 'Senza nome' }}</strong> - ID: {{ currentTag.employeeId }}</p>
-                <p style="font-size: 0.9em; color: var(--ion-color-medium); margin-top: 10px;">
-                  Usa la cronologia per inviare il tag al sistema
-                </p>
-              </ion-text>
-            </div>
-            
-            <div v-else-if="currentTag && currentTag.sendStatus === 'error'" class="nfc-result">
-              <ion-text color="danger">
-                <h3>✗ Errore Invio</h3>
-                <p>{{ currentTag.serial }}</p>
-                <p><strong>{{ currentTag.name || 'Senza nome' }}</strong> - ID: {{ currentTag.employeeId }}</p>
-              </ion-text>
-              
-              <ion-button 
-                @click="retryAPI" 
-                expand="block" 
-                color="warning"
-                :disabled="isCallingAPI"
-                style="margin-top: 10px;"
+            <!-- Main action buttons -->
+            <div v-if="!isReading && !currentTag" class="action-buttons">
+              <MaterialButton 
+                v-if="debugMode" 
+                @click="startNFCReading" 
+                variant="filled"
+                size="large"
+                :disabled="isReading"
               >
-                <ion-icon :icon="send" slot="start"></ion-icon>
-                {{ isCallingAPI ? 'Tentativo in corso...' : 'Riprova Invio' }}
-              </ion-button>
+                <template #icon>
+                  <ion-icon :icon="scan"></ion-icon>
+                </template>
+                Scansiona e Salva
+              </MaterialButton>
+            
+              <MaterialButton 
+                @click="goToContinuousReader" 
+                variant="outlined"
+                size="medium"
+              >
+                <template #icon>
+                  <ion-icon :icon="flash"></ion-icon>
+                </template>
+                Modalità Monitor
+              </MaterialButton>
+              
+              <MaterialButton 
+                @click="goBadgeSearch" 
+                variant="outlined"
+                size="medium"
+              >
+                <template #icon>
+                  <ion-icon :icon="searchOutline"></ion-icon>
+                </template>
+                Ricerca Badge
+              </MaterialButton>
             </div>
             
-            <ion-button 
-              v-if="debugMode && tagsHistory.length > 0"
-              @click="openHistory" 
-              expand="block" 
-              fill="outline" 
-              color="primary" 
-              style="margin-top: 20px;"
-            >
-              <ion-icon :icon="time" slot="start"></ion-icon>
-              Gestisci Cronologia ({{ tagsHistory.length }})
-            </ion-button>
+            <!-- Success Status Display -->
+            <StatusDisplay
+              v-if="currentTag && (currentTag.sendStatus === 'sent' || currentTag.sendStatus === 'completed')"
+              status="success"
+              :title="currentTag.sendStatus === 'completed' ? 'Tag Completato' : 'Tag Inviato'"
+              :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
+              :details="[
+                { label: 'Seriale', value: currentTag.serial },
+                { label: 'Ultimo aggiornamento', value: currentTag.lastUpdate ? new Date(currentTag.lastUpdate).toLocaleString() : 'N/A' }
+              ]"
+              variant="card"
+            />
             
-            <ion-button 
-              v-if="debugMode && currentTag && (currentTag.sendStatus === 'pending' || currentTag.sendStatus === 'error')"
-              @click="callAPI" 
-              expand="block" 
-              fill="outline" 
-              color="success" 
-              :disabled="isCallingAPI"
-              style="margin-top: 10px;"
+            <!-- Pending Status Display -->
+            <StatusDisplay
+              v-else-if="currentTag && currentTag.sendStatus === 'pending'"
+              status="info"
+              title="Tag Confermato"
+              :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
+              :details="[
+                { label: 'Seriale', value: currentTag.serial },
+                { label: 'Stato', value: 'In attesa di invio' }
+              ]"
+              variant="card"
             >
-              <ion-icon :icon="send" slot="start"></ion-icon>
-              {{ isCallingAPI ? 'Invio in corso...' : (currentTag.sendStatus === 'error' ? 'Riprova Salvataggio' : 'Salva nel Sistema') }}
-            </ion-button>
-          </ion-card-content>
-        </ion-card>
+              <template #actions>
+                <MaterialButton 
+                  v-if="debugMode"
+                  @click="callAPI" 
+                  variant="filled"
+                  size="small"
+                  :loading="isCallingAPI"
+                >
+                  <template #icon>
+                    <ion-icon :icon="send"></ion-icon>
+                  </template>
+                  Salva nel Sistema
+                </MaterialButton>
+              </template>
+            </StatusDisplay>
+            
+            <!-- Error Display -->
+            <ErrorDisplay
+              v-else-if="currentTag && currentTag.sendStatus === 'error'"
+              type="network"
+              title="Errore Invio Tag"
+              :message="`${currentTag.name || 'Senza nome'} - ID: ${currentTag.employeeId}`"
+              :details="`Seriale: ${currentTag.serial}`"
+              :suggestions="[
+                'Verifica la connessione di rete',
+                'Controlla che il servizio sia attivo',
+                'Riprova tra qualche secondo'
+              ]"
+              retryable
+              dismissible
+              @retry="retryAPI"
+              @dismiss="() => currentTag = null"
+            />
+            
+            <!-- Debug Mode Actions -->
+            <div v-if="debugMode && tagsHistory.length > 0" class="debug-actions">
+              <MaterialButton 
+                @click="openHistory" 
+                variant="tonal"
+                size="medium"
+              >
+                <template #icon>
+                  <ion-icon :icon="time"></ion-icon>
+                </template>
+                Gestisci Cronologia ({{ tagsHistory.length }})
+              </MaterialButton>
+            </div>
+        </MaterialCard>
         <ion-modal :is-open="showConfirmModal" @did-dismiss="cancelConfirm">
           <ion-header>
             <ion-toolbar>
@@ -454,6 +485,13 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { apiService } from '@/services/apiService';
+import { 
+  MaterialCard, 
+  MaterialButton, 
+  StatusDisplay, 
+  LoadingState, 
+  ErrorDisplay, 
+} from '@/components';
 
 interface NFCTag {
   id: string;
@@ -1212,37 +1250,96 @@ onUnmounted(async () => {
 
 <style scoped>
 #container {
-  text-align: center;
   padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-ion-card {
-  max-width: 600px;
-  margin: 20px auto;
+/* Material Card adjustments */
+:deep(.md-card) {
+  margin-bottom: 20px;
 }
 
-.nfc-result {
-  margin: 20px 0;
-  padding: 15px;
-  background-color: var(--ion-color-light);
-  border-radius: 8px;
+/* Card header styling */
+.card-header-title {
+  cursor: pointer;
+  user-select: none;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.nfc-result h3 {
-  margin-top: 0;
-  color: var(--ion-color-primary);
+.card-header-title h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface, #1d1b20);
 }
 
-.nfc-result p {
-  font-family: monospace;
-  font-size: 16px;
-  word-break: break-all;
+.debug-icon {
+  color: #ff9800;
+  font-size: 20px;
 }
 
 .debug-active {
-  background-color: rgba(255, 193, 7, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px dashed var(--ion-color-warning);
+  background-color: rgba(255, 152, 0, 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px dashed #ff9800;
+}
+
+/* Action buttons layout */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+/* Debug actions */
+.debug-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+/* Ensure Material components take full width */
+:deep(.md-button) {
+  width: 100%;
+}
+
+:deep(.md-status),
+:deep(.md-error),
+:deep(.md-loading) {
+  margin: 16px 0;
+}
+
+/* Responsive design */
+@media (min-width: 768px) {
+  #container {
+    padding: 40px;
+  }
+  
+  .action-buttons {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  :deep(.md-button) {
+    width: auto;
+    min-width: 200px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .card-header-title h2 {
+    color: var(--md-sys-color-on-surface, #e6e0e9);
+  }
+  
+  .debug-actions {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
 }
 </style>
