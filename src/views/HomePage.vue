@@ -16,13 +16,15 @@
       <div id="container">
         <ion-card>
           <ion-card-header>
-            <ion-card-title>Employee NFC</ion-card-title>
+            <ion-card-title @dblclick="toggleDebugMode" style="cursor: pointer; user-select: none; padding: 4px 8px;" :class="{ 'debug-active': debugMode }">Employee NFC
+              <ion-icon v-if="debugMode" :icon="bugOutline" style="margin-left: 8px; color: var(--ion-color-warning);" size="small"></ion-icon>
+            </ion-card-title>
           </ion-card-header>
           <ion-card-content>
-            <!-- <ion-button @click="startNFCReading" expand="block" :disabled="isReading">
+            <ion-button v-if="debugMode" @click="startNFCReading" expand="block" :disabled="isReading">
               <ion-icon :icon="scan" slot="start"></ion-icon>
               {{ isReading ? 'Lettura in corso...' : 'Scansiona e Salva' }}
-            </ion-button> -->
+            </ion-button>
             
             <ion-button 
               @click="goToContinuousReader" 
@@ -87,8 +89,8 @@
               </ion-button>
             </div>
             
-            <!-- <ion-button 
-              v-if="tagsHistory.length > 0"
+            <ion-button 
+              v-if="debugMode && tagsHistory.length > 0"
               @click="openHistory" 
               expand="block" 
               fill="outline" 
@@ -97,7 +99,20 @@
             >
               <ion-icon :icon="time" slot="start"></ion-icon>
               Gestisci Cronologia ({{ tagsHistory.length }})
-            </ion-button> -->
+            </ion-button>
+            
+            <ion-button 
+              v-if="debugMode && currentTag && (currentTag.sendStatus === 'pending' || currentTag.sendStatus === 'error')"
+              @click="callAPI" 
+              expand="block" 
+              fill="outline" 
+              color="success" 
+              :disabled="isCallingAPI"
+              style="margin-top: 10px;"
+            >
+              <ion-icon :icon="send" slot="start"></ion-icon>
+              {{ isCallingAPI ? 'Invio in corso...' : (currentTag.sendStatus === 'error' ? 'Riprova Salvataggio' : 'Salva nel Sistema') }}
+            </ion-button>
           </ion-card-content>
         </ion-card>
         <ion-modal :is-open="showConfirmModal" @did-dismiss="cancelConfirm">
@@ -138,7 +153,7 @@
         <ion-modal :is-open="showHistoryModal" @did-dismiss="closeHistoryModal">
           <ion-header>
             <ion-toolbar>
-              <ion-title @dblclick="toggleDebugMode">Cronologia Tag NFC</ion-title>
+              <ion-title @dblclick="toggleHistoryDebugMode">Cronologia Tag NFC</ion-title>
               <ion-button slot="end" fill="clear" @click="closeHistoryModal">
                 <ion-icon :icon="close"></ion-icon>
               </ion-button>
@@ -430,7 +445,7 @@ import {
   toastController,
   alertController
 } from '@ionic/vue';
-import { send, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash, searchOutline } from 'ionicons/icons';
+import { send, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, flash, searchOutline, scan, time, bugOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -465,6 +480,7 @@ const showConfirmModal = ref(false);
 const showHistoryModal = ref(false);
 const showTagDetailModal = ref(false);
 const showDebugMode = ref(false);
+const debugMode = ref(false);
 const currentTag = ref<NFCTag | null>(null);
 const tagsHistory = ref<NFCTag[]>([]);
 const tagForm = ref({
@@ -873,8 +889,23 @@ const sendTagAPI = async (tag: NFCTag) => {
 };
 
 const toggleDebugMode = () => {
+  debugMode.value = !debugMode.value;
+  showToast(debugMode.value ? 'Modalità Debug Attivata - Funzioni avanzate ora visibili' : 'Modalità Debug Disattivata - UI pulita ripristinata', debugMode.value ? 'warning' : 'success');
+  
+  // Auto-disable debug mode after 5 minutes to prevent it staying active accidentally
+  if (debugMode.value) {
+    setTimeout(() => {
+      if (debugMode.value) {
+        debugMode.value = false;
+        showToast('Modalità Debug disattivata automaticamente per sicurezza', 'medium');
+      }
+    }, 300000); // 5 minutes
+  }
+};
+
+const toggleHistoryDebugMode = () => {
   showDebugMode.value = !showDebugMode.value;
-  showToast(showDebugMode.value ? 'Debug mode attivato' : 'Debug mode disattivato', 'primary');
+  showToast(showDebugMode.value ? 'Debug cronologia attivato' : 'Debug cronologia disattivato', 'primary');
 };
 
 const openTagDetailModal = (tag: NFCTag) => {
@@ -1206,5 +1237,12 @@ ion-card {
   font-family: monospace;
   font-size: 16px;
   word-break: break-all;
+}
+
+.debug-active {
+  background-color: rgba(255, 193, 7, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px dashed var(--ion-color-warning);
 }
 </style>
