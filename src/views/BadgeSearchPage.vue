@@ -24,6 +24,7 @@
           </ion-card-header>
           <ion-card-content>
             <ion-button 
+              v-if="!operatorData"
               @click="startScanning" 
               expand="block" 
               :disabled="isScanning || isLoading"
