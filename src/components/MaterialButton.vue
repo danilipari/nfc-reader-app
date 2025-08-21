@@ -166,12 +166,41 @@ const handleClick = (event: MouseEvent) => {
 
 /* Variant styles */
 .md-button--filled {
-  background-color: var(--md-sys-color-primary);
+  background: linear-gradient(135deg, 
+    var(--md-sys-color-primary) 0%, 
+    color-mix(in srgb, var(--md-sys-color-primary) 90%, #764ba2) 100%);
   color: var(--md-sys-color-on-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.md-button--filled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.4) 50%, 
+    transparent 100%);
+  transition: left 0.5s ease;
+}
+
+.md-button--filled:hover::before {
+  left: 100%;
 }
 
 .md-button--filled:hover:not(:disabled) {
-  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0px 8px 20px 0px rgba(102, 126, 234, 0.4), 
+    0px 4px 12px 0px rgba(102, 126, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--md-sys-color-primary) 110%, white) 0%, 
+    color-mix(in srgb, var(--md-sys-color-primary) 95%, #764ba2) 100%);
 }
 
 .md-button--outlined {
@@ -214,15 +243,62 @@ const handleClick = (event: MouseEvent) => {
 .md-button--fab {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
-  background-color: var(--md-sys-color-primary-container);
+  border-radius: 28px;
+  background: linear-gradient(135deg, 
+    var(--md-sys-color-primary-container) 0%, 
+    color-mix(in srgb, var(--md-sys-color-primary-container) 90%, var(--md-sys-color-primary)) 100%);
   color: var(--md-sys-color-on-primary-container);
   padding: 0;
-  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0px 6px 20px 0px rgba(102, 126, 234, 0.3), 
+    0px 3px 10px 0px rgba(102, 126, 234, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.md-button--fab::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.md-button--fab:hover::after {
+  width: 100px;
+  height: 100px;
 }
 
 .md-button--fab:hover:not(:disabled) {
-  box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0px 12px 30px 0px rgba(102, 126, 234, 0.5), 
+    0px 6px 15px 0px rgba(102, 126, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-4px) scale(1.05);
+  animation: fabPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes fabPulse {
+  0%, 100% {
+    box-shadow: 
+      0px 12px 30px 0px rgba(102, 126, 234, 0.5), 
+      0px 6px 15px 0px rgba(102, 126, 234, 0.3),
+      0px 0px 0px 0px rgba(102, 126, 234, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0px 12px 30px 0px rgba(102, 126, 234, 0.5), 
+      0px 6px 15px 0px rgba(102, 126, 234, 0.3),
+      0px 0px 20px 10px rgba(102, 126, 234, 0.3);
+  }
 }
 
 /* Size variants */
@@ -375,13 +451,25 @@ const handleClick = (event: MouseEvent) => {
   opacity: 0.16;
 }
 
-/* Enhanced button interactions */
+/* Enhanced button interactions with micro-animations */
 .md-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.02);
+  animation: buttonGlow 2s ease-in-out infinite;
+}
+
+@keyframes buttonGlow {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.1) saturate(1.2);
+  }
 }
 
 .md-button:active:not(:disabled) {
-  transform: scale(0.98) translateY(0);
+  transform: scale(0.98) translateY(1px);
+  transition: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .md-button--filled:hover:not(:disabled) {

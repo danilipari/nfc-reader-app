@@ -978,7 +978,6 @@ onMounted(() => {
 
 :deep(ion-item:hover) {
   --background: rgba(103, 80, 164, 0.04);
-  transform: translateX(4px);
 }
 
 /* Advanced responsive design */

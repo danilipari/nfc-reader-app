@@ -712,21 +712,13 @@ onUnmounted(async () => {
   margin-left: 16px;
 }
 
-/* Enhanced card header styling */
+/* Card header styling */
 .card-header-title {
-  cursor: pointer;
-  user-select: none;
   padding: 16px 0;
   display: flex;
   align-items: center;
   gap: 16px;
-  transition: all 0.2s ease;
   border-radius: 12px;
-}
-
-.card-header-title:hover {
-  background: rgba(103, 80, 164, 0.04);
-  transform: translateX(4px);
 }
 
 .card-header-title h2 {

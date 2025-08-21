@@ -78,10 +78,9 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 <style scoped>
 .md-card {
-  --md-elevation-level0: none;
-  --md-elevation-level1: 0px 1px 3px 0px rgba(0, 0, 0, 0.2), 0px 2px 1px -1px rgba(0, 0, 0, 0.12), 0px 1px 1px 0px rgba(0, 0, 0, 0.14);
-  --md-elevation-level2: 0px 2px 4px -1px rgba(0, 0, 0, 0.2), 0px 4px 5px 0px rgba(0, 0, 0, 0.14), 0px 1px 10px 0px rgba(0, 0, 0, 0.12);
-  --md-elevation-level3: 0px 3px 5px -1px rgba(0, 0, 0, 0.2), 0px 6px 10px 0px rgba(0, 0, 0, 0.14), 0px 1px 18px 0px rgba(0, 0, 0, 0.12);
+  --md-elevation-premium: 0 8px 32px rgba(31, 38, 135, 0.37), 0 4px 16px rgba(31, 38, 135, 0.2);
+  --md-elevation-hover: 0 20px 40px rgba(31, 38, 135, 0.5), 0 12px 24px rgba(31, 38, 135, 0.3);
+  --md-elevation-pressed: 0 4px 16px rgba(31, 38, 135, 0.3), 0 2px 8px rgba(31, 38, 135, 0.2);
   
   --md-sys-color-surface: #fef7ff;
   --md-sys-color-surface-container: #f3eff4;
@@ -96,13 +95,18 @@ const handleKeydown = (event: KeyboardEvent) => {
   
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
-  background-color: var(--md-sys-color-surface-container-low);
-  box-shadow: var(--md-elevation-level1);
+  border-radius: 24px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.25) 0%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--md-elevation-premium);
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
   position: relative;
   isolation: isolate;
+  transform-style: preserve-3d;
 }
 
 .md-card::before {
@@ -110,15 +114,30 @@ const handleKeydown = (event: KeyboardEvent) => {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1px;
   background: linear-gradient(135deg, 
-    color-mix(in srgb, var(--md-sys-color-primary) 10%, transparent),
-    color-mix(in srgb, var(--md-sys-color-primary) 5%, transparent));
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: xor;
+    rgba(102, 126, 234, 0.3) 0%, 
+    rgba(118, 75, 162, 0.2) 50%,
+    rgba(240, 147, 251, 0.1) 100%);
   opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1);
   pointer-events: none;
+  z-index: -1;
+}
+
+.md-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    transparent 100%);
+  transition: left 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .md-card--elevated {
@@ -140,13 +159,32 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .md-card--clickable:hover:not(.md-card--disabled) {
-  box-shadow: var(--md-elevation-level2);
-  transform: translateY(-2px);
-  background-color: color-mix(in srgb, var(--md-sys-color-surface-container-low) 95%, var(--md-sys-color-primary));
+  box-shadow: var(--md-elevation-hover);
+  transform: translateY(-8px) rotateX(2deg) scale(1.02);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.35) 0%, 
+    rgba(255, 255, 255, 0.15) 100%);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.md-card--clickable:hover:not(.md-card--disabled)::after {
+  left: 100%;
 }
 
 .md-card--clickable:hover:not(.md-card--disabled)::before {
-  opacity: 1;
+  opacity: 0.8;
+  animation: cardGlow 2s ease-in-out infinite;
+}
+
+@keyframes cardGlow {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(25px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(20px);
+  }
 }
 
 .md-card--clickable:focus-visible {
@@ -159,13 +197,17 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .md-card--clickable.md-card--pressed {
-  transform: scale(0.98) translateY(0px);
-  box-shadow: var(--md-elevation-level1);
+  transform: scale(0.98) translateY(2px);
+  box-shadow: var(--md-elevation-pressed);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
 }
 
 .md-card--clickable:active:not(.md-card--disabled) {
-  transform: scale(0.98) translateY(0px);
+  transform: scale(0.98) translateY(2px);
   transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--md-elevation-pressed);
 }
 
 .md-card--disabled {
