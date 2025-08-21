@@ -17,6 +17,7 @@
     "dev:android": "npm run build && npx cap sync && adb install -r android/app/build/outputs/apk/debug/app-debug.apk && npm run launch:apk",
     "update:android": "npm run build && npx cap sync && adb install -r android/app/build/outputs/apk/debug/app-debug.apk && npm run launch:apk",
     "log:android": "adb logcat | grep -i console",
+    "build:install:launch:android": "./build-apk.sh && npm run install:launch",
     "sync-cap:android": "npx cap sync android && npx cap run android",
     "install:assets": "npm install --save-dev @capacitor/assets"
   },

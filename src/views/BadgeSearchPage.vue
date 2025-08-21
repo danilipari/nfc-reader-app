@@ -17,145 +17,125 @@
     </ion-header>
 
     <ion-content :fullscreen="true">
-      <div id="container">
-        <MaterialCard class="main-card">
-          <div class="card-content">
-            <MaterialButton 
-              v-if="!operatorData"
-              @click="startScanning" 
-              variant="filled"
-              :disabled="isScanning || isLoading"
-              class="scan-button"
-            >
-              <template #icon>
-                <ion-icon :icon="search"></ion-icon>
-              </template>
-              {{ isScanning ? 'Scansione in corso...' : 'Scansiona Tag' }}
-            </MaterialButton>
+      <div class="minimal-container">
+        <div v-if="!operatorData && !errorMessage && !isLoading" class="scan-section">
+          <div class="scan-prompt">
+            <ion-icon :icon="searchOutline" class="scan-icon"></ion-icon>
+            <h2>Scansiona un Badge</h2>
+            <p>Avvicina il badge al lettore NFC per iniziare</p>
+          </div>
+          
+          <button 
+            @click="startScanning" 
+            :disabled="isScanning"
+            class="minimal-scan-button"
+            :class="{ 'scanning': isScanning }"
+          >
+            <ion-icon :icon="scan" v-if="!isScanning"></ion-icon>
+            <ion-spinner name="crescent" v-else></ion-spinner>
+            <span>{{ isScanning ? 'Scansione in corso...' : 'Scansiona Badge' }}</span>
+          </button>
+        </div>
 
-            <div v-if="scannedTag && !operatorData && !errorMessage" class="tag-info">
-              <MaterialCard class="tag-card">
-                <div class="tag-content">
-                  <h3>Tag Rilevato</h3>
-                  <p><strong>Seriale:</strong> {{ scannedTag }}</p>
-                  <ion-spinner v-if="isLoading" name="crescent" color="primary"></ion-spinner>
-                  <p v-if="isLoading" class="loading-text">Ricerca in corso...</p>
-                </div>
-              </MaterialCard>
+        <!-- Loading State -->
+        <div v-if="isLoading && scannedTag" class="loading-section">
+          <div class="loading-content">
+            <ion-spinner name="crescent" class="large-spinner"></ion-spinner>
+            <p class="loading-text">Ricerca badge {{ scannedTag }}</p>
+          </div>
+        </div>
+
+        <!-- Success State - Operator Data -->
+        <div v-if="operatorData" class="result-section">
+          
+          <!-- Profile Header -->
+          <div class="profile-header">
+            <div class="avatar-large">
+              <img 
+                v-if="operatorData?.entity?.photo" 
+                :src="operatorData.entity.photo"
+                :alt="`${operatorData?.first_name} ${operatorData?.last_name}`"
+                @error="handleImageError"
+              />
+              <div v-else class="avatar-placeholder">
+                {{ getInitials(operatorData?.first_name, operatorData?.last_name) }}
+              </div>
             </div>
-
-            <div v-if="operatorData" class="operator-data">
-              <MaterialCard class="success-card">
-                <div class="card-header">
-                  <h3 class="success-title">
-                    <ion-icon :icon="checkmarkCircle"></ion-icon>
-                    Badge Trovato
-                  </h3>
-                </div>
-                <div class="card-content">
-                  <div class="profile-section">
-                    <div class="avatar-container">
-                      <img 
-                        v-if="operatorData?.entity?.photo" 
-                        :src="operatorData.entity.photo"
-                        :alt="`${operatorData?.first_name} ${operatorData?.last_name}`"
-                        class="avatar-image"
-                        @error="handleImageError"
-                      />
-                      <div v-else class="avatar-initials">
-                        {{ getInitials(operatorData?.first_name, operatorData?.last_name) }}
-                      </div>
-                    </div>
-                    
-                    <div class="profile-info">
-                      <h2 class="profile-name">
-                        {{ operatorData?.first_name }} {{ operatorData?.last_name }}
-                      </h2>
-                      <p class="profile-email">{{ operatorData?.email }}</p>
-                      <div class="profile-badges">
-                        <span class="badge operator-badge">ID: {{ operatorData?.entity?.operator_id }}</span>
-                        <span class="badge employee-badge">EMP: {{ operatorData?.ext_user_id }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="details-section">
-                    <div class="detail-item">
-                      <ion-icon :icon="fingerPrint" class="detail-icon"></ion-icon>
-                      <div class="detail-content">
-                        <span class="detail-label">Seriale Badge</span>
-                        <span class="detail-value">{{ operatorData?.serial_number }}</span>
-                      </div>
-                    </div>
-                    
-                    <div v-if="operatorData?.locks && operatorData.locks.length > 0" class="detail-item">
-                      <ion-icon :icon="lockClosed" class="detail-icon"></ion-icon>
-                      <div class="detail-content">
-                        <span class="detail-label">Accessi Autorizzati</span>
-                        <div class="locks-container">
-                          <span v-for="lock in operatorData.locks" :key="lock" class="lock-badge">
-                            {{ lock }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <MaterialButton 
-                    @click="startScanning" 
-                    variant="outlined"
-                    class="new-search-button"
-                  >
-                    <template #icon>
-                      <ion-icon :icon="refresh"></ion-icon>
-                    </template>
-                    Nuova Ricerca
-                  </MaterialButton>
-                </div>
-              </MaterialCard>
-            </div>
-
-            <div v-if="errorMessage" class="error-section">
-              <MaterialCard class="error-card">
-                <div class="card-header">
-                  <h3 class="error-title">
-                    <ion-icon :icon="alertCircle"></ion-icon>
-                    Errore nella Ricerca
-                  </h3>
-                </div>
-                <div class="card-content">
-                  <p><strong>Tag:</strong> {{ scannedTag }}</p>
-                  <p><strong>Errore:</strong> {{ errorMessage }}</p>
-                  
-                  <div class="error-actions">
-                    <MaterialButton 
-                      @click="retrySearch" 
-                      variant="filled"
-                      :disabled="isLoading"
-                      class="retry-button"
-                    >
-                      <template #icon>
-                        <ion-icon :icon="reload"></ion-icon>
-                      </template>
-                      {{ isLoading ? 'Riprovando...' : 'Riprova' }}
-                    </MaterialButton>
-                    
-                    <MaterialButton 
-                      @click="resetSearch" 
-                      variant="outlined"
-                      class="reset-button"
-                    >
-                      <template #icon>
-                        <ion-icon :icon="refresh"></ion-icon>
-                      </template>
-                      Reset
-                    </MaterialButton>
-                  </div>
-                </div>
-              </MaterialCard>
+            
+            <h1 class="operator-name">{{ operatorData?.first_name }} {{ operatorData?.last_name }}</h1>
+            <p class="operator-email">{{ operatorData?.email }}</p>
+            
+            <div class="id-row">
+              <span class="id-chip">Operator: {{ operatorData?.entity?.operator_id }}</span>
+              <span class="id-chip">Employee: {{ operatorData?.ext_user_id }}</span>
             </div>
           </div>
-        </MaterialCard>
+
+          <!-- Data Grid -->
+          <div class="data-grid">
+            
+            <div class="data-row">
+              <div class="data-label">
+                <ion-icon :icon="fingerPrint"></ion-icon>
+                <span>Badge Serial</span>
+              </div>
+              <div class="data-value">{{ operatorData?.serial_number }}</div>
+            </div>
+            
+            <div v-if="operatorData?.locks && operatorData.locks.length > 0" class="data-row">
+              <div class="data-label">
+                <ion-icon :icon="lockClosed"></ion-icon>
+                <span>Accessi</span>
+              </div>
+              <div class="data-value">
+                <div class="access-list">
+                  <span v-for="lock in operatorData.locks" :key="lock" class="access-item">
+                    {{ lock }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="operatorData?.entity?.created_at" class="data-row">
+              <div class="data-label">
+                <ion-icon :icon="calendarOutline"></ion-icon>
+                <span>Creato il</span>
+              </div>
+              <div class="data-value">{{ formatDate(operatorData.entity.created_at) }}</div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-row">
+            <button @click="startScanning" class="minimal-button secondary">
+              <ion-icon :icon="refresh"></ion-icon>
+              <span>Nuova Ricerca</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        <div v-if="errorMessage" class="error-section">
+          <div class="error-content">
+            <ion-icon :icon="alertCircleOutline" class="error-icon"></ion-icon>
+            <h2>Badge non trovato</h2>
+            <p class="error-detail">{{ errorMessage }}</p>
+            <p class="error-tag">Tag: {{ scannedTag }}</p>
+            
+            <div class="error-actions">
+              <button @click="retrySearch" :disabled="isLoading" class="minimal-button primary">
+                <ion-icon :icon="reload"></ion-icon>
+                <span>{{ isLoading ? 'Riprovando...' : 'Riprova' }}</span>
+              </button>
+              
+              <button @click="resetSearch" class="minimal-button secondary">
+                <ion-icon :icon="arrowBack"></ion-icon>
+                <span>Nuova Ricerca</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
       </div>
     </ion-content>
   </ion-page>
@@ -173,11 +153,10 @@ import {
   IonSpinner,
   toastController
 } from '@ionic/vue';
-import { search, arrowBack, refresh, reload, checkmarkCircle, alertCircle, fingerPrint, lockClosed } from 'ionicons/icons';
+import { searchOutline, arrowBack, refresh, reload, alertCircleOutline, fingerPrint, lockClosed, scan, calendarOutline } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { nfcService } from '@/services/nfcService';
 import { apiService } from '@/services/apiService';
-import MaterialCard from '@/components/MaterialCard.vue';
 import MaterialButton from '@/components/MaterialButton.vue';
 
 interface SearchHistoryItem {
@@ -212,15 +191,19 @@ const goBack = () => {
 };
 
 const searchBadge = async (tag: string) => {
+  console.log('🔍 searchBadge called with tag:', tag);
   isLoading.value = true;
   errorMessage.value = null;
   operatorData.value = null;
   
   try {
     const response = await apiService.searchBySerial(tag);
+    console.log('📡 API Response:', response);
     
     if (response.success) {
       operatorData.value = response.data.data;
+      console.log('✅ operatorData set to:', operatorData.value);
+      console.log('States - isLoading:', isLoading.value, 'errorMessage:', errorMessage.value);
       
       searchHistory.value.push({
         tag,
@@ -256,6 +239,12 @@ const searchBadge = async (tag: string) => {
     showToast(`Errore: ${err}`, 'danger');
   } finally {
     isLoading.value = false;
+    console.log('🏁 Final states:', {
+      operatorData: operatorData.value,
+      isLoading: isLoading.value,
+      errorMessage: errorMessage.value,
+      scannedTag: scannedTag.value
+    });
   }
 };
 
@@ -326,14 +315,25 @@ const getInitials = (firstName: string, lastName: string): string => {
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement;
   img.style.display = 'none';
-  // Mostra le iniziali quando l'immagine fallisce
   const container = img.parentElement;
   if (container) {
-    const initialsDiv = container.querySelector('.avatar-initials');
-    if (initialsDiv) {
-      (initialsDiv as HTMLElement).style.display = 'flex';
+    const placeholder = container.querySelector('.avatar-placeholder');
+    if (placeholder) {
+      (placeholder as HTMLElement).style.display = 'flex';
     }
   }
+};
+
+const formatDate = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('it-IT', { 
+    day: '2-digit', 
+    month: 'long', 
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 
@@ -341,6 +341,9 @@ onMounted(async () => {
   const isSupported = await nfcService.isSupported();
   if (!isSupported) {
     showToast('NFC non disponibile', 'warning');
+  } else {
+    // Avvia automaticamente la scansione all'apertura della pagina
+    // await startScanning();
   }
 });
 
@@ -350,487 +353,403 @@ onUnmounted(async () => {
 </script>
 
 <style scoped>
-/* Material 3 Design System Variables */
+/* Minimal Design System */
 :root {
-  --md-sys-color-primary: #6750a4;
-  --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #eaddff;
-  --md-sys-color-on-primary-container: #21005d;
-  --md-sys-color-surface: #fef7ff;
-  --md-sys-color-on-surface: #1d1b20;
-  --md-sys-color-surface-variant: #e7e0ec;
-  --md-sys-color-on-surface-variant: #49454f;
-  --md-sys-color-outline: #79747e;
-  --md-sys-color-success: #4caf50;
-  --md-sys-color-error: #f44336;
-  --md-ref-elevation-level1: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-  --md-ref-elevation-level2: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --primary: #6750a4;
+  --primary-light: #eaddff;
+  --text-primary: #1d1b20;
+  --text-secondary: #49454f;
+  --text-tertiary: #79747e;
+  --surface: #ffffff;
+  --surface-variant: #f7f3fc;
+  --border: #e0e0e0;
+  --success: #4caf50;
+  --error: #f44336;
+  --warning: #ff9800;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --md-sys-color-primary: #d0bcff;
-    --md-sys-color-on-primary: #381e72;
-    --md-sys-color-primary-container: #4f378b;
-    --md-sys-color-on-primary-container: #eaddff;
-    --md-sys-color-surface: #141218;
-    --md-sys-color-on-surface: #e6e0e9;
-    --md-sys-color-surface-variant: #49454f;
-    --md-sys-color-on-surface-variant: #cac4d0;
-    --md-sys-color-outline: #938f99;
+    --primary: #d0bcff;
+    --primary-light: #4f378b;
+    --text-primary: #e6e0e9;
+    --text-secondary: #cac4d0;
+    --text-tertiary: #938f99;
+    --surface: #141218;
+    --surface-variant: #1e1b24;
+    --border: #49454f;
   }
 }
 
-#container {
-  padding: 24px 16px;
-  min-height: 100vh;
-  background: linear-gradient(135deg, var(--md-sys-color-surface) 0%, color-mix(in srgb, var(--md-sys-color-primary-container) 10%, var(--md-sys-color-surface)) 100%);
+.minimal-container {
+  min-height: calc(100vh - 56px); /* Account for header */
+  background: var(--surface);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Material Card Styles */
-.main-card {
-  max-width: 600px;
-  margin: 0 auto;
-  animation: slideIn 0.4s ease-out;
-}
-
-.card-header {
+/* Scan Section */
+.scan-section {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 20px;
   text-align: center;
-  padding: 32px 24px 24px;
-  background: linear-gradient(135deg, var(--md-sys-color-primary-container), color-mix(in srgb, var(--md-sys-color-primary-container) 80%, transparent));
-  border-radius: 28px 28px 0 0;
-  margin: -24px -24px 24px -24px;
 }
 
-.title {
+.scan-prompt {
+  margin-bottom: 40px;
+}
+
+.scan-icon {
+  font-size: 64px;
+  color: var(--ion-color-primary, var(--primary));
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.scan-prompt h2 {
   font-size: 28px;
-  font-weight: 600;
-  color: var(--md-sys-color-on-primary-container);
+  font-weight: 300;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
   letter-spacing: -0.5px;
 }
 
-.subtitle {
+.scan-prompt p {
   font-size: 16px;
-  color: color-mix(in srgb, var(--md-sys-color-on-primary-container) 80%, transparent);
+  color: var(--text-secondary);
   margin: 0;
-  line-height: 1.4;
 }
 
-.card-content {
-  padding: 0;
-}
-
-/* Button Styles */
-.scan-button,
-.new-search-button {
+.minimal-scan-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
-  margin: 16px 0;
-  height: 48px;
-  border-radius: 24px;
-  font-weight: 500;
+  max-width: 280px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  background: var(--ion-color-primary, var(--primary));
+  color: var(--ion-color-primary-contrast, white);
+  border: none;
+  border-radius: 100px;
   font-size: 16px;
-  letter-spacing: 0.1px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.back-button {
-  border-radius: 20px !important;
-  --ripple-color: var(--md-sys-color-primary);
+.minimal-scan-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(103, 80, 164, 0.3);
 }
 
-/* Status Cards */
-.tag-info,
-.operator-data,
-.error-section {
-  margin: 24px 0;
+.minimal-scan-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.tag-card {
-  background: var(--md-sys-color-primary-container);
-  border: 1px solid color-mix(in srgb, var(--md-sys-color-primary) 20%, transparent);
-  animation: slideIn 0.3s ease-out;
+.minimal-scan-button.scanning {
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
-.tag-content {
-  padding: 24px;
+.minimal-scan-button ion-icon {
+  font-size: 20px;
+}
+
+.minimal-scan-button ion-spinner {
+  --color: var(--ion-color-primary, var(--primary));
+}
+
+/* Loading Section */
+.loading-section {
+  padding: 60px 20px;
   text-align: center;
 }
 
-.tag-content h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--md-sys-color-on-primary-container);
-  margin: 0 0 12px 0;
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
-.tag-content p {
-  font-size: 16px;
-  color: var(--md-sys-color-on-primary-container);
-  margin: 8px 0;
+.large-spinner {
+  width: 48px;
+  height: 48px;
+  --color: var(--primary);
 }
 
 .loading-text {
-  font-style: italic;
-  opacity: 0.8;
-  animation: pulse 1.5s infinite;
+  font-size: 16px;
+  color: var(--text-secondary);
+  animation: fade 1.5s ease-in-out infinite;
 }
 
-/* Success Card */
-.success-card {
-  background: linear-gradient(135deg, #e8f5e8, #f1f8e9);
-  border: 1px solid var(--md-sys-color-success);
-  animation: slideIn 0.3s ease-out;
+/* Result Section */
+.result-section {
+  width: 100%;
+  max-width: 600px;
+  padding: 40px 20px;
 }
 
-.success-title {
+/* Profile Header */
+.profile-header {
+  text-align: center;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+
+.avatar-large {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+  position: relative;
+}
+
+.avatar-large img,
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+.operator-name {
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.operator-email {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin: 0 0 20px 0;
+}
+
+.id-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.id-chip {
+  padding: 8px 16px;
+  background: var(--surface-variant);
+  color: var(--text-primary);
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Data Grid */
+.data-grid {
+  margin-bottom: 40px;
+}
+
+.data-row {
+  display: flex;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-row:last-child {
+  border-bottom: none;
+}
+
+.data-label {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 140px;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.data-label ion-icon {
   font-size: 20px;
-  font-weight: 600;
-  color: var(--md-sys-color-success);
-  margin: 0;
+  color: var(--primary);
 }
 
-.success-title ion-icon {
-  font-size: 24px;
+.data-value {
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 400;
 }
 
-/* Error Card */
-.error-card {
-  background: linear-gradient(135deg, #ffebee, #ffcdd2);
-  border: 1px solid var(--md-sys-color-error);
-  animation: slideIn 0.3s ease-out;
+.access-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.error-title {
+.access-item {
+  padding: 6px 12px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Action Row */
+.action-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+/* Minimal Buttons */
+.minimal-button {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--md-sys-color-error);
-  margin: 0;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 100px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.error-title ion-icon {
+.minimal-button.primary {
+  background: var(--ion-color-primary, var(--primary));
+  color: var(--ion-color-primary-contrast, white);
+}
+
+.minimal-button.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(103, 80, 164, 0.3);
+}
+
+.minimal-button.secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.minimal-button.secondary:hover {
+  background: var(--surface-variant);
+  border-color: var(--text-tertiary);
+}
+
+.minimal-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.minimal-button ion-icon {
+  font-size: 18px;
+}
+
+/* Error Section */
+.error-section {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 20px;
+}
+
+.error-content {
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 64px;
+  color: var(--error);
+  margin-bottom: 24px;
+  opacity: 0.9;
+}
+
+.error-content h2 {
   font-size: 24px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
 }
 
-.success-card .card-header,
-.error-card .card-header {
-  padding: 20px 24px;
-  margin: -24px -24px 20px -24px;
-  border-radius: 28px 28px 0 0;
+.error-detail {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
 }
 
-.success-card .card-content,
-.error-card .card-content {
-  padding: 0 24px 24px;
+.error-tag {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin: 0 0 32px 0;
+  font-family: 'SF Mono', monospace;
 }
 
 .error-actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 20px;
-}
-
-.retry-button,
-.reset-button {
-  flex: 1;
-  height: 44px;
-  border-radius: 22px;
-}
-
-/* Profile Section */
-.profile-section {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 24px;
-  padding: 20px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--md-sys-color-outline) 20%, transparent);
-}
-
-.avatar-container {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.avatar-image,
-.avatar-initials {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--md-sys-color-primary-container);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.avatar-initials {
-  display: flex;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--md-sys-color-primary), var(--md-sys-color-primary-container));
-  color: var(--md-sys-color-on-primary);
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: 1px;
 }
 
-.profile-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.profile-name {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--md-sys-color-on-surface);
-  margin: 0 0 8px 0;
-  line-height: 1.2;
-}
-
-.profile-email {
-  font-size: 16px;
-  color: var(--md-sys-color-on-surface-variant);
-  margin: 0 0 12px 0;
-  opacity: 0.8;
-}
-
-.profile-badges {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.badge {
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.operator-badge {
-  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-  color: #1565c0;
-  border: 1px solid #90caf9;
-}
-
-.employee-badge {
-  background: linear-gradient(135deg, #f3e5f5, #e1bee7);
-  color: #7b1fa2;
-  border: 1px solid #ce93d8;
-}
-
-/* Details Section */
-.details-section {
-  margin: 24px 0;
-}
-
-.detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: color-mix(in srgb, var(--md-sys-color-surface-variant) 30%, transparent);
-  border-radius: 16px;
-  transition: all 0.3s ease;
-}
-
-.detail-item:hover {
-  background: color-mix(in srgb, var(--md-sys-color-surface-variant) 50%, transparent);
-  transform: translateX(4px);
-}
-
-.detail-icon {
-  font-size: 24px;
-  color: var(--md-sys-color-primary);
-  margin-top: 2px;
-}
-
-.detail-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.detail-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--md-sys-color-on-surface-variant);
-  margin-bottom: 4px;
-  opacity: 0.8;
-}
-
-.detail-value {
-  display: block;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--md-sys-color-on-surface);
-  font-family: 'SF Mono', monospace;
-  letter-spacing: 0.5px;
-}
-
-.locks-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.lock-badge {
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
-  color: #ef6c00;
-  border: 1px solid #ffcc02;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: all 0.3s ease;
-}
-
-.lock-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(239, 108, 0, 0.2);
-}
-
-/* Spinner Styling */
-ion-spinner {
-  margin: 16px 0;
-  --color: var(--md-sys-color-primary);
+.error-actions .minimal-button {
+  min-width: 200px;
 }
 
 /* Animations */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fade {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* Enhanced Hover Effects */
-.tag-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--md-ref-elevation-level2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.success-card:hover,
-.error-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--md-ref-elevation-level2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .main-card,
-  .tag-card,
-  .success-card,
-  .error-card {
-    animation: none;
-  }
-  
-  .loading-text {
-    animation: none;
-  }
-  
-  .tag-card:hover,
-  .success-card:hover,
-  .error-card:hover {
-    transform: none;
-    transition: none;
-  }
-}
-
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
-  #container {
-    padding: 16px 12px;
+  .minimal-container {
+    padding: 20px;
   }
   
-  .card-header {
-    padding: 24px 16px 20px;
-    margin: -20px -20px 20px -20px;
+  .operator-name {
+    font-size: 26px;
   }
   
-  .title {
-    font-size: 24px;
+  .operator-email {
+    font-size: 16px;
   }
   
-  .subtitle {
-    font-size: 14px;
+  .data-row {
+    flex-direction: column;
+    gap: 8px;
   }
   
-  .error-actions {
+  .data-label {
+    min-width: auto;
+  }
+  
+  .action-row {
     flex-direction: column;
   }
   
-  .retry-button,
-  .reset-button {
+  .minimal-button {
     width: 100%;
   }
-  
-  /* Profile responsive */
-  .profile-section {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 16px;
-  }
-  
-  .profile-info {
-    text-align: center;
-  }
-  
-  .profile-name {
-    font-size: 20px;
-  }
-  
-  .avatar-image,
-  .avatar-initials {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .avatar-initials {
-    font-size: 22px;
-  }
-  
-  .profile-badges {
-    justify-content: center;
-  }
-  
-  .detail-item:hover {
-    transform: none;
-  }
-  
-  .locks-container {
-    justify-content: center;
-  }
-}
-
-/* Hide old ionic card styles when using material cards */
-.tag-info ion-card,
-.operator-data ion-card,
-.error-section ion-card {
-  display: none;
 }
 </style>
