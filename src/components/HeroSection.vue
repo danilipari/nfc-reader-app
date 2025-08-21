@@ -164,13 +164,6 @@ const heroClasses = computed(() => [
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.md-hero__icon:hover {
-  transform: translateY(-2px) scale(1.05);
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .md-hero__icon-background {
@@ -178,11 +171,6 @@ const heroClasses = computed(() => [
   inset: 0;
   background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
   opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.md-hero__icon:hover .md-hero__icon-background {
-  opacity: 1;
 }
 
 .md-hero__icon-svg {
@@ -190,11 +178,6 @@ const heroClasses = computed(() => [
   z-index: 1;
   font-size: 32px;
   color: currentColor;
-  transition: transform 0.3s ease;
-}
-
-.md-hero__icon:hover .md-hero__icon-svg {
-  transform: scale(1.1);
 }
 
 /* Floating elements for visual appeal */

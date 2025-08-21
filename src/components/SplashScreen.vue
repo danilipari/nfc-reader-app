@@ -164,11 +164,8 @@ onMounted(() => {
   height: 100%;
   background: linear-gradient(135deg, 
     #6750a4 0%, 
-    #7c4dff 25%, 
-    #3f51b5 50%, 
-    #2196f3 75%, 
-    #03a9f4 100%);
-  animation: gradientShift 8s ease-in-out infinite;
+    #7c4dff 50%, 
+    #3f51b5 100%);
 }
 
 .gradient-overlay {
@@ -293,7 +290,7 @@ onMounted(() => {
   justify-content: center;
   position: relative;
   z-index: 2;
-  animation: logoRotate 3s linear infinite;
+  animation: logoRotate 6s linear infinite;
 }
 
 .logo-icon {

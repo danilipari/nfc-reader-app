@@ -188,7 +188,7 @@ import {
   IonTitle,
   toastController
 } from '@ionic/vue';
-import { send, trash, checkmark, close, scan, bugOutline, flash, searchOutline, timeOutline } from 'ionicons/icons';
+import { send, checkmark, close, scan, bugOutline, flash, searchOutline, timeOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';

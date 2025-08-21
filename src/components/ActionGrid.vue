@@ -46,7 +46,7 @@ export interface ActionItem {
 
 interface Props {
   actions: ActionItem[]
-  columns?: 1 | 2 | 3 | 4 | 'auto'
+  columns?: 1 | 2 | 3 | 4 | '1' | '2' | '3' | '4' | 'auto'
   gap?: 'small' | 'medium' | 'large'
   alignment?: 'start' | 'center' | 'end' | 'stretch'
   loading?: boolean

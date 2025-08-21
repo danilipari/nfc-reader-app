@@ -212,7 +212,7 @@
             
             <ActionGrid
               :actions="tagDetailActions"
-              :columns="1"
+              columns="1"
               gap="medium"
               @action="handleTagDetailAction"
             />
@@ -261,7 +261,7 @@ import {
   checkboxOutline,
   createOutline
 } from 'ionicons/icons';
-import { useRouter } from 'vue-router';
+// import { useRouter } from 'vue-router'; // Future use
 import { isPlatform } from '@ionic/vue';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -286,7 +286,7 @@ interface NFCTag {
   apiResponse?: any;
 }
 
-const router = useRouter();
+// const router = useRouter(); // Future use for navigation
 const STORAGE_KEY = 'nfc_tags_history';
 
 const showTagDetailModal = ref(false);
@@ -774,6 +774,7 @@ const handleFileImport = async (event: Event) => {
     if (text.charCodeAt(0) === 0xFEFF) {
       text = text.slice(1);
     }
+    // eslint-disable-next-line no-control-regex
     text = text.replace(/^[\x00-\x1F\x7F-\x9F]+/, '');
     
     if (!text.startsWith('{') && !text.startsWith('[')) {
