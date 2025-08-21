@@ -3,6 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import HomePage from '../views/HomePage.vue'
 import ContinuousReaderPage from '../views/ContinuousReaderPage.vue'
 import BadgeSearchPage from '../views/BadgeSearchPage.vue'
+import HistoryView from '../views/HistoryView.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -23,6 +24,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/badge-search',
     name: 'BadgeSearch',
     component: BadgeSearchPage
+  },
+  {
+    path: '/history',
+    name: 'History',
+    component: HistoryView
   }
 ]
 

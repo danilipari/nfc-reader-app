@@ -15,10 +15,7 @@
         @click="handleActionClick(action, index)"
       >
         <template v-if="action.icon" #icon>
-          <component :is="action.icon" v-if="typeof action.icon === 'string'" />
-          <slot v-else :name="`icon-${index}`">
-            {{ action.icon }}
-          </slot>
+          <ion-icon :icon="action.icon"></ion-icon>
         </template>
         {{ action.label }}
       </MaterialButton>
@@ -32,6 +29,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { IonIcon } from '@ionic/vue'
 import MaterialButton from './MaterialButton.vue'
 
 export interface ActionItem {

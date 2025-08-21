@@ -165,268 +165,6 @@
             </div>
           </ion-content>
         </ion-modal>
-        <ion-modal :is-open="showHistoryModal" @did-dismiss="closeHistoryModal">
-          <ion-header>
-            <ion-toolbar>
-              <ion-title @dblclick="toggleHistoryDebugMode">Cronologia Tag NFC</ion-title>
-              <ion-button slot="end" fill="clear" @click="closeHistoryModal">
-                <ion-icon :icon="close"></ion-icon>
-              </ion-button>
-            </ion-toolbar>
-          </ion-header>
-          <ion-content>
-            <div style="padding: 10px; display: flex; gap: 10px; background: var(--ion-color-light); flex-wrap: wrap;">
-              <ion-button 
-                v-if="!isSelectionMode"
-                @click="exportHistory" 
-                expand="block" 
-                fill="solid" 
-                color="secondary" 
-                style="flex: 1; min-width: 120px;"
-                size="small"
-              >
-                <ion-icon :icon="downloadOutline" slot="start"></ion-icon>
-                Esporta
-              </ion-button>
-              
-              <ion-button 
-                v-if="!isSelectionMode"
-                @click="triggerImportFile" 
-                expand="block" 
-                fill="solid" 
-                color="tertiary" 
-                style="flex: 1; min-width: 120px;"
-                size="small"
-              >
-                <ion-icon :icon="cloudUploadOutline" slot="start"></ion-icon>
-                Importa
-              </ion-button>
-              
-              <ion-button 
-                v-if="!isSelectionMode && tagsHistory.length > 0"
-                @click="startSelectionMode" 
-                expand="block" 
-                fill="outline" 
-                color="primary" 
-                style="flex: 1; min-width: 120px;"
-                size="small"
-              >
-                <ion-icon :icon="checkmark" slot="start"></ion-icon>
-                Seleziona
-              </ion-button>
-              
-              <!-- Modalità selezione -->
-              <ion-button 
-                v-if="isSelectionMode"
-                @click="selectAllTags" 
-                expand="block" 
-                fill="solid" 
-                color="primary" 
-                style="flex: 1; min-width: 100px;"
-                size="small"
-              >
-                Tutti
-              </ion-button>
-              
-              <ion-button 
-                v-if="isSelectionMode"
-                @click="deselectAllTags" 
-                expand="block" 
-                fill="outline" 
-                color="medium" 
-                style="flex: 1; min-width: 100px;"
-                size="small"
-              >
-                Nessuno
-              </ion-button>
-              
-              <ion-button 
-                v-if="isSelectionMode && selectedTagIds.size > 0"
-                @click="deleteSelectedTags" 
-                expand="block" 
-                fill="solid" 
-                color="danger" 
-                style="flex: 1; min-width: 100px;"
-                size="small"
-              >
-                <ion-icon :icon="trashOutline" slot="start"></ion-icon>
-                Elimina ({{ selectedTagIds.size }})
-              </ion-button>
-              
-              <ion-button 
-                v-if="isSelectionMode"
-                @click="exitSelectionMode" 
-                expand="block" 
-                fill="clear" 
-                color="medium" 
-                style="flex: 1; min-width: 100px;"
-                size="small"
-              >
-                <ion-icon :icon="close" slot="start"></ion-icon>
-                Annulla
-              </ion-button>
-            </div>
-            
-            <input 
-              ref="fileInput" 
-              type="file" 
-              accept=".json,.txt" 
-              @change="handleFileImport" 
-              style="display: none;"
-            />
-            <ion-list v-if="tagsHistory.length > 0">
-              <ion-item-sliding v-for="tag in tagsHistory" :key="tag.id">
-                <ion-item @click="isSelectionMode ? toggleTagSelection(tag.id) : openTagDetailModal(tag)">
-                  <ion-checkbox 
-                    v-if="isSelectionMode"
-                    :checked="selectedTagIds.has(tag.id)"
-                    @ionChange="toggleTagSelection(tag.id)"
-                    slot="start"
-                    style="margin-right: 16px;"
-                  ></ion-checkbox>
-                  <ion-label>
-                    <h3>{{ tag.name || 'Senza nome' }}</h3>
-                    <p>{{ tag.serial }}</p>
-                    <p>ID: {{ tag.employeeId }} - {{ new Date(tag.timestamp).toLocaleDateString() }}</p>
-                    <p v-if="tag.sendStatus === 'completed' && tag.lastUpdate" style="font-size: 0.8em; color: var(--ion-color-medium);">
-                      Aggiornato: {{ new Date(tag.lastUpdate).toLocaleString() }}
-                    </p>
-                    <pre v-if="showDebugMode && tag.apiResponse" style="font-size: 0.7em; background: #f5f5f5; padding: 5px; margin-top: 5px; border-radius: 3px;">{{ JSON.stringify(tag.apiResponse, null, 2) }}</pre>
-                  </ion-label>
-                  <ion-badge 
-                    v-if="!isSelectionMode"
-                    :color="(tag.sendStatus === 'sent' || tag.sendStatus === 'completed') ? 'success' : tag.sendStatus === 'error' ? 'danger' : 'warning'"
-                    slot="end"
-                  >
-                    {{ tag.sendStatus === 'completed' ? 'Completato' : tag.sendStatus === 'sent' ? 'Inviato' : tag.sendStatus === 'error' ? 'Errore' : 'Pendente' }}
-                  </ion-badge>
-                </ion-item>
-                
-                <ion-item-options v-if="!isSelectionMode" side="end">
-                  <ion-item-option 
-                    v-if="tag.sendStatus === 'pending' || tag.sendStatus === 'error'"
-                    @click="sendTagAPI(tag)" 
-                    color="success"
-                  >
-                    <ion-icon :icon="send"></ion-icon>
-                    Invia
-                  </ion-item-option>
-                  <ion-item-option 
-                    v-if="tag.sendStatus === 'completed'"
-                    @click="sendTagAPI(tag)" 
-                    color="warning"
-                  >
-                    <ion-icon :icon="send"></ion-icon>
-                    Aggiorna
-                  </ion-item-option>
-                  <ion-item-option @click="confirmDeleteSingleTag(tag.id)" color="danger">
-                    <ion-icon :icon="trash"></ion-icon>
-                    Elimina
-                  </ion-item-option>
-                </ion-item-options>
-              </ion-item-sliding>
-            </ion-list>
-            
-            <div v-else style="padding: 20px; text-align: center;">
-              <ion-text color="medium">
-                <p>Nessun tag nella cronologia</p>
-                <ion-button 
-                  @click="triggerImportFile" 
-                  expand="block" 
-                  fill="outline" 
-                  color="primary" 
-                  style="margin-top: 20px;"
-                >
-                  <ion-icon :icon="cloudUploadOutline" slot="start"></ion-icon>
-                  Importa Backup
-                </ion-button>
-              </ion-text>
-            </div>
-            <div v-if="selectedHistoryTag" style="padding: 20px; border-top: 1px solid var(--ion-color-light);">
-              <ion-text>
-                <h4>Modifica Tag: {{ selectedHistoryTag.serial }}</h4>
-              </ion-text>
-              
-              <ion-item>
-                <ion-label position="stacked">Nome Tag</ion-label>
-                <ion-input v-model="tagForm.name" placeholder="Nome tag"></ion-input>
-              </ion-item>
-              
-              <ion-item>
-                <ion-label position="stacked">ID Employee</ion-label>
-                <ion-input v-model="tagForm.employeeId" placeholder="ID Employee"></ion-input>
-              </ion-item>
-              
-              <ion-button @click="updateHistoryTag" expand="block" color="primary" style="margin-top: 10px;">
-                <ion-icon :icon="checkmark" slot="start"></ion-icon>
-                Salva Modifiche
-              </ion-button>
-            </div>
-          </ion-content>
-        </ion-modal>
-        
-        <ion-modal :is-open="showTagDetailModal" @did-dismiss="closeTagDetailModal">
-          <ion-header>
-            <ion-toolbar>
-              <ion-title>Dettagli Tag</ion-title>
-              <ion-button slot="end" fill="clear" @click="closeTagDetailModal">
-                <ion-icon :icon="close"></ion-icon>
-              </ion-button>
-            </ion-toolbar>
-          </ion-header>
-          <ion-content>
-            <div v-if="selectedHistoryTag" style="padding: 20px;">
-              <ion-card>
-                <ion-card-content>
-                  <ion-text>
-                    <h2>{{ selectedHistoryTag.name || 'Senza nome' }}</h2>
-                    <p><strong>Seriale:</strong> {{ selectedHistoryTag.serial }}</p>
-                    <p><strong>Employee ID:</strong> {{ selectedHistoryTag.employeeId }}</p>
-                    <p><strong>Data creazione:</strong> {{ new Date(selectedHistoryTag.timestamp).toLocaleString() }}</p>
-                    <p v-if="selectedHistoryTag.lastUpdate"><strong>Ultimo aggiornamento:</strong> {{ new Date(selectedHistoryTag.lastUpdate).toLocaleString() }}</p>
-                    <ion-badge :color="(selectedHistoryTag.sendStatus === 'sent' || selectedHistoryTag.sendStatus === 'completed') ? 'success' : selectedHistoryTag.sendStatus === 'error' ? 'danger' : 'warning'">
-                      {{ selectedHistoryTag.sendStatus === 'completed' ? 'Completato' : selectedHistoryTag.sendStatus === 'sent' ? 'Inviato' : selectedHistoryTag.sendStatus === 'error' ? 'Errore' : 'Pendente' }}
-                    </ion-badge>
-                  </ion-text>
-                </ion-card-content>
-              </ion-card>
-              
-              <ion-card>
-                <ion-card-header>
-                  <ion-card-title>Azioni</ion-card-title>
-                </ion-card-header>
-                <ion-card-content>
-                  <ion-button 
-                    v-if="selectedHistoryTag.sendStatus === 'pending' || selectedHistoryTag.sendStatus === 'error'"
-                    @click="sendTagAPIFromModal" 
-                    expand="block" 
-                    color="success"
-                    style="margin-bottom: 10px;"
-                  >
-                    <ion-icon :icon="send" slot="start"></ion-icon>
-                    Invia al sistema
-                  </ion-button>
-                  
-                  <ion-button 
-                    v-if="selectedHistoryTag.sendStatus === 'completed'"
-                    @click="sendTagAPIFromModal" 
-                    expand="block" 
-                    color="warning"
-                    style="margin-bottom: 10px;"
-                  >
-                    <ion-icon :icon="send" slot="start"></ion-icon>
-                    Aggiorna il sistema
-                  </ion-button>
-                  
-                  <ion-button @click="confirmDeleteCurrentTag" expand="block" color="danger">
-                    <ion-icon :icon="trash" slot="start"></ion-icon>
-                    Elimina Tag
-                  </ion-button>
-                </ion-card-content>
-              </ion-card>
-            </div>
-          </ion-content>
-        </ion-modal>
       </div>
     </ion-content>
   </ion-page>
@@ -436,38 +174,26 @@
 import { ref, computed } from 'vue';
 import { 
   IonContent, 
-  IonHeader, 
   IonPage, 
-  IonTitle, 
-  IonToolbar,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
   IonButton,
   IonIcon,
   IonText,
   IonModal,
+  IonHeader,
   IonInput,
   IonItem,
   IonLabel,
-  IonList,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption,
   IonBadge,
-  IonCheckbox,
-  toastController,
-  alertController
+  IonToolbar,
+  IonTitle,
+  toastController
 } from '@ionic/vue';
-import { send, trash, checkmark, close, downloadOutline, cloudUploadOutline, trashOutline, scan, bugOutline } from 'ionicons/icons';
+import { send, trash, checkmark, close, scan, bugOutline, flash, searchOutline, timeOutline } from 'ionicons/icons';
 import { isPlatform } from '@ionic/vue';
 import { onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { NFC } from '@exxili/capacitor-nfc';
 import { StatusBar, Style } from '@capacitor/status-bar';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 import { apiService } from '@/services/apiService';
 import { 
   MaterialCard, 
@@ -501,9 +227,6 @@ const apiResponse = ref('');
 const nfcEnabled = ref(false);
 const nfcListenersActive = ref(false);
 const showConfirmModal = ref(false);
-const showHistoryModal = ref(false);
-const showTagDetailModal = ref(false);
-const showDebugMode = ref(false);
 const debugMode = ref(false);
 const currentTag = ref<NFCTag | null>(null);
 const tagsHistory = ref<NFCTag[]>([]);
@@ -511,23 +234,20 @@ const tagForm = ref({
   name: '',
   employeeId: ''
 });
-const selectedHistoryTag = ref<NFCTag | null>(null);
-const selectedTagIds = ref<Set<string>>(new Set());
-const isSelectionMode = ref(false);
 
 // Computed properties for action grids
 const quickActions = computed(() => [
   {
     id: 'continuous-reader',
     label: 'Monitor Continuo',
-    iconName: 'flash',
+    icon: flash,
     variant: 'filled' as const,
     action: () => goToContinuousReader()
   },
   {
     id: 'badge-search',
     label: 'Ricerca Badge',
-    iconName: 'search-outline',
+    icon: searchOutline,
     variant: 'outlined' as const,
     action: () => goBadgeSearch()
   }
@@ -537,7 +257,7 @@ const debugActions = computed(() => [
   {
     id: 'scan-tag',
     label: 'Scansiona Tag',
-    iconName: 'scan',
+    icon: scan,
     variant: 'filled' as const,
     disabled: isReading.value,
     action: () => startNFCReading()
@@ -545,10 +265,10 @@ const debugActions = computed(() => [
   {
     id: 'history',
     label: `Cronologia (${tagsHistory.value.length})`,
-    iconName: 'time',
+    icon: timeOutline,
     variant: 'tonal' as const,
     disabled: tagsHistory.value.length === 0,
-    action: () => openHistory()
+    action: () => router.push('/history')
   }
 ]);
 
@@ -891,76 +611,6 @@ const retryAPI = async () => {
   }
 };
 
-const openHistory = () => {
-  showHistoryModal.value = true;
-};
-
-const updateHistoryTag = () => {
-  if (!selectedHistoryTag.value) return;
-  
-  const oldEmployeeId = selectedHistoryTag.value.employeeId;
-  const newEmployeeId = tagForm.value.employeeId.trim();
-  
-  const duplicateTag = tagsHistory.value.find(tag => 
-    tag.employeeId === newEmployeeId && tag.id !== selectedHistoryTag.value!.id
-  );
-  
-  if (duplicateTag) {
-    showToast(`Employee ID ${newEmployeeId} già utilizzato per il tag ${duplicateTag.serial}`, 'danger');
-    return;
-  }
-  
-  selectedHistoryTag.value.name = tagForm.value.name.trim() || undefined;
-  selectedHistoryTag.value.employeeId = newEmployeeId;
-  
-  if (oldEmployeeId !== newEmployeeId && (selectedHistoryTag.value.sendStatus === 'sent' || selectedHistoryTag.value.sendStatus === 'completed')) {
-    selectedHistoryTag.value.sendStatus = 'pending';
-    selectedHistoryTag.value.lastUpdate = undefined;
-    showToast('Employee ID modificato - status resettato a pendente', 'warning');
-  }
-  
-  const tagIndex = tagsHistory.value.findIndex(tag => tag.id === selectedHistoryTag.value!.id);
-  if (tagIndex >= 0) {
-    tagsHistory.value[tagIndex] = { ...selectedHistoryTag.value };
-    saveTagsHistory();
-    showToast('Tag aggiornato', 'success');
-  }
-  
-  selectedHistoryTag.value = null;
-};
-
-const deleteHistoryTag = (tagId: string) => {
-  if (selectedHistoryTag.value && selectedHistoryTag.value.id === tagId) {
-    selectedHistoryTag.value = null;
-    tagForm.value.name = '';
-    tagForm.value.employeeId = '';
-  }
-  
-  tagsHistory.value = tagsHistory.value.filter(tag => tag.id !== tagId);
-  saveTagsHistory();
-  showToast('Tag eliminato', 'success');
-};
-
-const closeHistoryModal = () => {
-  if (!selectedHistoryTag.value) {
-    currentTag.value = null;
-    nfcValue.value = '';
-  }
-  selectedHistoryTag.value = null;
-  showHistoryModal.value = false;
-};
-
-const sendTagAPI = async (tag: NFCTag) => {
-  const previousTag = currentTag.value;
-  currentTag.value = tag;
-  
-  try {
-    await callAPI();
-  } finally {
-    currentTag.value = previousTag;
-  }
-};
-
 const toggleDebugMode = () => {
   debugMode.value = !debugMode.value;
   showToast(debugMode.value ? 'Modalità Debug Attivata - Funzioni avanzate ora visibili' : 'Modalità Debug Disattivata - UI pulita ripristinata', debugMode.value ? 'warning' : 'success');
@@ -976,285 +626,6 @@ const toggleDebugMode = () => {
   }
 };
 
-const toggleHistoryDebugMode = () => {
-  showDebugMode.value = !showDebugMode.value;
-  showToast(showDebugMode.value ? 'Debug cronologia attivato' : 'Debug cronologia disattivato', 'primary');
-};
-
-const openTagDetailModal = (tag: NFCTag) => {
-  selectedHistoryTag.value = tag;
-  tagForm.value.name = tag.name || '';
-  tagForm.value.employeeId = tag.employeeId || '';
-  showTagDetailModal.value = true;
-};
-
-const closeTagDetailModal = () => {
-  showTagDetailModal.value = false;
-  selectedHistoryTag.value = null;
-  tagForm.value.name = '';
-  tagForm.value.employeeId = '';
-};
-
-const sendTagAPIFromModal = async () => {
-  if (selectedHistoryTag.value) {
-    await sendTagAPI(selectedHistoryTag.value);
-    closeTagDetailModal();
-  }
-};
-
-const deleteCurrentTag = () => {
-  if (selectedHistoryTag.value) {
-    deleteHistoryTag(selectedHistoryTag.value.id);
-    closeTagDetailModal();
-  }
-};
-
-const startSelectionMode = () => {
-  isSelectionMode.value = true;
-  selectedTagIds.value.clear();
-};
-
-const exitSelectionMode = () => {
-  isSelectionMode.value = false;
-  selectedTagIds.value.clear();
-};
-
-const toggleTagSelection = (tagId: string) => {
-  if (selectedTagIds.value.has(tagId)) {
-    selectedTagIds.value.delete(tagId);
-  } else {
-    selectedTagIds.value.add(tagId);
-  }
-};
-
-const selectAllTags = () => {
-  selectedTagIds.value.clear();
-  tagsHistory.value.forEach(tag => selectedTagIds.value.add(tag.id));
-};
-
-const deselectAllTags = () => {
-  selectedTagIds.value.clear();
-};
-
-const confirmDeleteSingleTag = async (tagId: string) => {
-  const alert = await alertController.create({
-    header: 'Conferma Eliminazione',
-    message: 'Sei sicuro di voler eliminare questo tag?',
-    buttons: [
-      {
-        text: 'Annulla',
-        role: 'cancel'
-      },
-      {
-        text: 'Elimina',
-        role: 'destructive',
-        handler: () => {
-          deleteHistoryTag(tagId);
-        }
-      }
-    ]
-  });
-  
-  await alert.present();
-};
-
-const confirmDeleteCurrentTag = async () => {
-  if (!selectedHistoryTag.value) return;
-  
-  const alert = await alertController.create({
-    header: 'Conferma Eliminazione',
-    message: `Sei sicuro di voler eliminare il tag "${selectedHistoryTag.value.name || selectedHistoryTag.value.serial}"?`,
-    buttons: [
-      {
-        text: 'Annulla',
-        role: 'cancel'
-      },
-      {
-        text: 'Elimina',
-        role: 'destructive',
-        handler: () => {
-          deleteCurrentTag();
-        }
-      }
-    ]
-  });
-  
-  await alert.present();
-};
-
-const deleteSelectedTags = async () => {
-  if (selectedTagIds.value.size === 0) return;
-  
-  const alert = await alertController.create({
-    header: 'Conferma Eliminazione Multipla',
-    message: `Sei sicuro di voler eliminare ${selectedTagIds.value.size} tag selezionati? Questa azione non può essere annullata.`,
-    buttons: [
-      {
-        text: 'Annulla',
-        role: 'cancel'
-      },
-      {
-        text: 'Elimina Tutti',
-        role: 'destructive',
-        handler: () => {
-          const idsToDelete = Array.from(selectedTagIds.value);
-          idsToDelete.forEach(id => deleteHistoryTag(id));
-          
-          showToast(`Eliminati ${idsToDelete.length} tag`, 'success');
-          exitSelectionMode();
-        }
-      }
-    ]
-  });
-  
-  await alert.present();
-};
-
-const exportHistory = async () => {
-  try {
-    const dataToExport = {
-      version: '1.0',
-      exportDate: new Date().toISOString(),
-      tags: tagsHistory.value
-    };
-    
-    const jsonString = JSON.stringify(dataToExport, null, 2);
-    const fileName = `nfc-tags-backup-${new Date().toISOString().split('T')[0]}.json`;
-    
-    if (isPlatform('capacitor')) {
-      try {
-        const result = await Filesystem.writeFile({
-          path: fileName,
-          data: jsonString,
-          directory: Directory.Documents,
-          encoding: 'utf8' as any,
-          recursive: true
-        });
-        
-        const shareResult = await Share.share({
-          title: 'Backup Tag NFC',
-          text: `Backup di ${tagsHistory.value.length} tag NFC`,
-          url: result.uri,
-          dialogTitle: 'Salva o condividi il backup'
-        });
-        
-        if (shareResult.activityType) {
-          showToast(`Esportati ${tagsHistory.value.length} tag`, 'success');
-        }
-      } catch (shareError) {
-        console.error('Share error:', shareError);
-        showToast(`File salvato in Documents: ${fileName}`, 'success');
-      }
-    } else {
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      showToast(`Esportati ${tagsHistory.value.length} tag`, 'success');
-    }
-  } catch (error) {
-    showToast('Errore durante l\'esportazione', 'danger');
-    console.error('Export error:', error);
-  }
-};
-
-const fileInput = ref<HTMLInputElement | null>(null);
-
-const triggerImportFile = () => {
-  fileInput.value?.click();
-};
-
-const handleFileImport = async (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  
-  if (!file) return;
-  
-  try {
-    let text = await file.text();
-    
-    text = text.trim();
-    if (text.charCodeAt(0) === 0xFEFF) {
-      text = text.slice(1);
-    }
-    text = text.replace(/^[\x00-\x1F\x7F-\x9F]+/, '');
-    
-    if (!text.startsWith('{') && !text.startsWith('[')) {
-      try {
-        const decoded = atob(text);
-        text = decodeURIComponent(escape(decoded));
-        console.log('Decoded from base64');
-      } catch (e) {
-        console.log('Not base64 encoded, using original text');
-      }
-    }
-    
-    console.log('Importing JSON:', text.substring(0, 100));
-    
-    const importedData = JSON.parse(text);
-    if (!importedData.tags || !Array.isArray(importedData.tags)) {
-      throw new Error('Formato file non valido');
-    }
-    
-    const validTags: NFCTag[] = [];
-    const existingSerials = new Set(tagsHistory.value.map(t => t.serial));
-    let skippedCount = 0;
-    
-    for (const tag of importedData.tags) {
-      if (!tag.serial || !tag.id) {
-        continue;
-      }
-      
-      if (existingSerials.has(tag.serial)) {
-        skippedCount++;
-        continue;
-      }
-      
-      const validTag: NFCTag = {
-        id: tag.id,
-        serial: tag.serial,
-        name: tag.name || undefined,
-        employeeId: tag.employeeId || undefined,
-        timestamp: tag.timestamp || Date.now(),
-        lastSent: tag.lastSent || undefined,
-        lastUpdate: tag.lastUpdate || undefined,
-        sendStatus: tag.sendStatus || 'pending',
-        apiResponse: tag.apiResponse || undefined
-      };
-      
-      validTags.push(validTag);
-    }
-    
-    if (validTags.length === 0) {
-      showToast('Nessun nuovo tag da importare', 'warning');
-      return;
-    }
-    
-    tagsHistory.value = [...tagsHistory.value, ...validTags];
-    saveTagsHistory();
-    
-    let message = `Importati ${validTags.length} nuovi tag`;
-    if (skippedCount > 0) {
-      message += ` (${skippedCount} già esistenti)`;
-    }
-    showToast(message, 'success');
-    
-  } catch (error) {
-    showToast('Errore durante l\'importazione: ' + (error instanceof Error ? error.message : 'Formato non valido'), 'danger');
-    console.error('Import error:', error);
-  } finally {
-    if (target) {
-      target.value = '';
-    }
-  }
-};
 
 onMounted(async () => {
   loadTagsHistory();
