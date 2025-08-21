@@ -53,8 +53,52 @@
                   </h3>
                 </div>
                 <div class="card-content">
-                  <div class="response-container">
-                    <pre>{{ JSON.stringify(operatorData, null, 2) }}</pre>
+                  <div class="profile-section">
+                    <div class="avatar-container">
+                      <img 
+                        v-if="operatorData?.entity?.photo" 
+                        :src="operatorData.entity.photo"
+                        :alt="`${operatorData?.first_name} ${operatorData?.last_name}`"
+                        class="avatar-image"
+                        @error="handleImageError"
+                      />
+                      <div v-else class="avatar-initials">
+                        {{ getInitials(operatorData?.first_name, operatorData?.last_name) }}
+                      </div>
+                    </div>
+                    
+                    <div class="profile-info">
+                      <h2 class="profile-name">
+                        {{ operatorData?.first_name }} {{ operatorData?.last_name }}
+                      </h2>
+                      <p class="profile-email">{{ operatorData?.email }}</p>
+                      <div class="profile-badges">
+                        <span class="badge operator-badge">ID: {{ operatorData?.entity?.operator_id }}</span>
+                        <span class="badge employee-badge">EMP: {{ operatorData?.ext_user_id }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="details-section">
+                    <div class="detail-item">
+                      <ion-icon :icon="fingerPrint" class="detail-icon"></ion-icon>
+                      <div class="detail-content">
+                        <span class="detail-label">Seriale Badge</span>
+                        <span class="detail-value">{{ operatorData?.serial_number }}</span>
+                      </div>
+                    </div>
+                    
+                    <div v-if="operatorData?.locks && operatorData.locks.length > 0" class="detail-item">
+                      <ion-icon :icon="lockClosed" class="detail-icon"></ion-icon>
+                      <div class="detail-content">
+                        <span class="detail-label">Accessi Autorizzati</span>
+                        <div class="locks-container">
+                          <span v-for="lock in operatorData.locks" :key="lock" class="lock-badge">
+                            {{ lock }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   <MaterialButton 
@@ -129,7 +173,7 @@ import {
   IonSpinner,
   toastController
 } from '@ionic/vue';
-import { search, arrowBack, refresh, reload, checkmarkCircle, alertCircle } from 'ionicons/icons';
+import { search, arrowBack, refresh, reload, checkmarkCircle, alertCircle, fingerPrint, lockClosed } from 'ionicons/icons';
 import { useRouter } from 'vue-router';
 import { nfcService } from '@/services/nfcService';
 import { apiService } from '@/services/apiService';
@@ -176,13 +220,13 @@ const searchBadge = async (tag: string) => {
     const response = await apiService.searchBySerial(tag);
     
     if (response.success) {
-      operatorData.value = response.data;
+      operatorData.value = response.data.data;
       
       searchHistory.value.push({
         tag,
         timestamp: Date.now(),
         success: true,
-        data: response.data
+        data: response.data.data
       });
       
       showToast('Badge trovato', 'success');
@@ -271,6 +315,25 @@ const resetSearch = () => {
   errorMessage.value = null;
   isLoading.value = false;
   // Non fermare isScanning qui, viene gestito da startScanning
+};
+
+const getInitials = (firstName: string, lastName: string): string => {
+  const first = firstName?.charAt(0)?.toUpperCase() || '';
+  const last = lastName?.charAt(0)?.toUpperCase() || '';
+  return `${first}${last}`;
+};
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.style.display = 'none';
+  // Mostra le iniziali quando l'immagine fallisce
+  const container = img.parentElement;
+  if (container) {
+    const initialsDiv = container.querySelector('.avatar-initials');
+    if (initialsDiv) {
+      (initialsDiv as HTMLElement).style.display = 'flex';
+    }
+  }
 };
 
 
@@ -479,26 +542,160 @@ onUnmounted(async () => {
   border-radius: 22px;
 }
 
-/* Response Container */
-.response-container {
-  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
-  border-radius: 16px;
-  padding: 20px;
-  margin: 16px 0;
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline) 30%, transparent);
-  box-shadow: var(--md-ref-elevation-level1);
+/* Profile Section */
+.profile-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--md-sys-color-outline) 20%, transparent);
 }
 
-.response-container pre {
-  color: #e0e0e0;
+.avatar-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatar-image,
+.avatar-initials {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--md-sys-color-primary-container);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--md-sys-color-primary), var(--md-sys-color-primary-container));
+  color: var(--md-sys-color-on-primary);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.profile-email {
+  font-size: 16px;
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0 0 12px 0;
+  opacity: 0.8;
+}
+
+.profile-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.operator-badge {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+.employee-badge {
+  background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
+}
+
+/* Details Section */
+.details-section {
+  margin: 24px 0;
+}
+
+.detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--md-sys-color-surface-variant) 30%, transparent);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+  background: color-mix(in srgb, var(--md-sys-color-surface-variant) 50%, transparent);
+  transform: translateX(4px);
+}
+
+.detail-icon {
+  font-size: 24px;
+  color: var(--md-sys-color-primary);
+  margin-top: 2px;
+}
+
+.detail-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.detail-value {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-family: 'SF Mono', monospace;
+  letter-spacing: 0.5px;
+}
+
+.locks-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lock-badge {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  color: #ef6c00;
+  border: 1px solid #ffcc02;
+  border-radius: 12px;
   font-size: 13px;
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  line-height: 1.5;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.lock-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(239, 108, 0, 0.2);
 }
 
 /* Spinner Styling */
@@ -589,6 +786,44 @@ ion-spinner {
   .retry-button,
   .reset-button {
     width: 100%;
+  }
+  
+  /* Profile responsive */
+  .profile-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .profile-info {
+    text-align: center;
+  }
+  
+  .profile-name {
+    font-size: 20px;
+  }
+  
+  .avatar-image,
+  .avatar-initials {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .avatar-initials {
+    font-size: 22px;
+  }
+  
+  .profile-badges {
+    justify-content: center;
+  }
+  
+  .detail-item:hover {
+    transform: none;
+  }
+  
+  .locks-container {
+    justify-content: center;
   }
 }
 
